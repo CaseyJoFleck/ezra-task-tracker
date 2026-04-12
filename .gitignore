@@ -1,0 +1,9 @@
+# Local-only Cursor rule (take-home guardrails); do not publish to remote
+.cursor/rules/ezra-takehome.mdc
+
+# .NET / SQLite local
+**/bin/
+**/obj/
+**/*.db
+**/*.db-shm
+**/*.db-wal

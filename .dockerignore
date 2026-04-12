@@ -1,0 +1,12 @@
+.git
+.cursor
+**/.vs
+**/bin
+**/obj
+**/node_modules
+**/dist
+.env
+**/.env
+!**/.env.example
+*.md
+!README.md
