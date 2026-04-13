@@ -169,7 +169,7 @@ Base path: **`/api`**. JSON only; dates in **ISO 8601** UTC.
 |--------|--------|-------------|
 | `GET` | `/api/members` | List members (sorted by display name) |
 | `POST` | `/api/members` | Create member |
-| `GET` | `/api/members/{memberId}` | Get one member |
+| `DELETE` | `/api/members/{id}` | Delete member; assigned tasks become unassigned |
 
 ### Tasks
 
@@ -177,32 +177,30 @@ Base path: **`/api`**. JSON only; dates in **ISO 8601** UTC.
 |--------|--------|-------------|
 | `GET` | `/api/tasks` | List with query parameters (below) |
 | `POST` | `/api/tasks` | Create task |
-| `GET` | `/api/tasks/{taskId}` | Get one task |
-| `PUT` | `/api/tasks/{taskId}` | Full update |
-| `DELETE` | `/api/tasks/{taskId}` | Delete |
-| `POST` | `/api/tasks/{taskId}/complete` | Mark complete |
-| `POST` | `/api/tasks/{taskId}/reopen` | Reopen |
+| `GET` | `/api/tasks/{id}` | Get one task |
+| `PUT` | `/api/tasks/{id}` | Full update |
+| `PATCH` | `/api/tasks/{id}/status` | Status-only update (complete/reopen/in-progress/etc.) |
+| `DELETE` | `/api/tasks/{id}` | Delete |
 
 ### Query parameters — `GET /api/tasks`
 
 | Parameter | Example | Description |
 |-----------|---------|-------------|
-| `status` | `Pending` | Optional; repeat or comma-separated per implementation choice |
-| `priority` | `High` | Optional |
-| `assigneeMemberId` | UUID | Optional; empty = unassigned filter if supported |
-| `search` | `vendor` | Title contains (case-insensitive) |
+| `status` | `todo` | Optional; single enum value |
+| `priority` | `high` | Optional; single enum value |
+| `assigneeMemberId` | UUID | Optional |
+| `search` | `follow-up` | Title contains (case-insensitive) |
 | `sortBy` | `created` \| `due` \| `priority` | Default `created` |
 | `sortDir` | `asc` \| `desc` | Default `desc` for created |
 | `overdueOnly` | `true` | Optional; filter overdue rows |
 
-**Note:** Exact query encoding (single vs repeated params) will be fixed in implementation; clients will use one consistent style.
+**Note:** API enums are serialized as camelCase strings.
 
 ### Health
 
 | Method | Route | Description |
 |--------|--------|-------------|
 | `GET` | `/health` | Liveness |
-| `GET` | `/health/ready` | Readiness (DB can open) |
 
 Swagger UI at `/swagger` in Development.
 
