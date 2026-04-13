@@ -6,7 +6,7 @@ public sealed record TaskItemResponse(
     Guid Id,
     string Title,
     string? Description,
-    TaskStatus Status,
+    TaskItemStatus Status,
     TaskPriority Priority,
     Guid? AssigneeMemberId,
     string? AssigneeDisplayName,
@@ -20,7 +20,7 @@ public sealed class CreateTaskRequest
 {
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public TaskStatus Status { get; set; } = TaskStatus.Todo;
+    public TaskItemStatus Status { get; set; } = TaskItemStatus.Todo;
     public TaskPriority Priority { get; set; } = TaskPriority.Medium;
     public Guid? AssigneeMemberId { get; set; }
     public DateTimeOffset? DueDateUtc { get; set; }
@@ -30,7 +30,7 @@ public sealed class UpdateTaskRequest
 {
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public TaskStatus Status { get; set; }
+    public TaskItemStatus Status { get; set; }
     public TaskPriority Priority { get; set; }
     public Guid? AssigneeMemberId { get; set; }
     public DateTimeOffset? DueDateUtc { get; set; }
@@ -38,5 +38,5 @@ public sealed class UpdateTaskRequest
 
 public sealed class UpdateTaskStatusRequest
 {
-    public TaskStatus Status { get; set; }
+    public TaskItemStatus Status { get; set; }
 }

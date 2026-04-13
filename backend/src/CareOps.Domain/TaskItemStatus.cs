@@ -1,6 +1,6 @@
 namespace CareOps.Domain;
 
-public enum TaskStatus
+public enum TaskItemStatus
 {
     Todo = 0,
     InProgress = 1,

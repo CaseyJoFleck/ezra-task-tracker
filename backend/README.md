@@ -1,6 +1,10 @@
 # CareOps backend
 
-ASP.NET Core 8 Web API: **Api** → **Application** → **Domain** ← **Infrastructure** (EF Core + SQLite).
+ASP.NET Core **10** Web API: **Api** → **Application** → **Domain** ← **Infrastructure** (EF Core + SQLite). All projects target **`net10.0`** (see `Directory.Build.props`).
+
+## Prerequisites
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 ## Run locally
 
@@ -16,6 +20,15 @@ dotnet run --project src/CareOps.Api/CareOps.Api.csproj
 
 SQLite file defaults to **`careops.db`** in the API project directory (`src/CareOps.Api/`). Override with `ConnectionStrings__Default` in environment or `appsettings.json`.
 
+## Run tests
+
+```bash
+cd backend
+dotnet test CareOps.sln
+```
+
+See [tests/README.md](tests/README.md) for integration vs unit layout and filtering examples.
+
 ## Run in Docker (from repo root)
 
 ```bash
@@ -23,7 +36,7 @@ docker compose build api
 docker compose up api
 ```
 
-Uses **`Data Source=/data/careops.db`** with a named volume. Swagger is enabled when `ASPNETCORE_ENVIRONMENT=Development` (default in Compose).
+The image uses **.NET 10** (`sdk:10.0` / `aspnet:10.0-alpine`). SQLite uses **`Data Source=/data/careops.db`** with a named volume. Swagger is enabled when `ASPNETCORE_ENVIRONMENT=Development` (default in Compose).
 
 ## API surface (summary)
 

@@ -8,6 +8,7 @@ public static class SeedData
     public static async Task EnsureSeededAsync(ApplicationDbContext db, CancellationToken cancellationToken = default)
     {
         await db.Database.EnsureCreatedAsync(cancellationToken);
+        await ApplySqlitePragmasAsync(db, cancellationToken);
 
         if (await db.Members.AnyAsync(cancellationToken))
             return;
@@ -25,7 +26,7 @@ public static class SeedData
                 Id = Guid.NewGuid(),
                 Title = "Follow up with linen vendor contract renewal",
                 Description = "Confirm pricing for Q3 and capture signed addendum.",
-                Status = TaskStatus.InProgress,
+                Status = TaskItemStatus.InProgress,
                 Priority = TaskPriority.High,
                 AssigneeMemberId = m1.Id,
                 DueDateUtc = now.AddDays(2),
@@ -36,7 +37,7 @@ public static class SeedData
             {
                 Id = Guid.NewGuid(),
                 Title = "Update room turnover checklist template",
-                Status = TaskStatus.Todo,
+                Status = TaskItemStatus.Todo,
                 Priority = TaskPriority.Medium,
                 AssigneeMemberId = m2.Id,
                 DueDateUtc = now.AddDays(7),
@@ -47,7 +48,7 @@ public static class SeedData
             {
                 Id = Guid.NewGuid(),
                 Title = "Archive last month ops meeting notes",
-                Status = TaskStatus.Completed,
+                Status = TaskItemStatus.Completed,
                 Priority = TaskPriority.Low,
                 AssigneeMemberId = m3.Id,
                 DueDateUtc = now.AddDays(-1),
@@ -59,7 +60,7 @@ public static class SeedData
             {
                 Id = Guid.NewGuid(),
                 Title = "Schedule fire drill walkthrough with facilities",
-                Status = TaskStatus.Todo,
+                Status = TaskItemStatus.Todo,
                 Priority = TaskPriority.High,
                 AssigneeMemberId = null,
                 DueDateUtc = now.AddDays(-3),
@@ -68,5 +69,11 @@ public static class SeedData
             });
 
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task ApplySqlitePragmasAsync(ApplicationDbContext db, CancellationToken cancellationToken)
+    {
+        await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;", cancellationToken);
+        await db.Database.ExecuteSqlRawAsync("PRAGMA busy_timeout=5000;", cancellationToken);
     }
 }

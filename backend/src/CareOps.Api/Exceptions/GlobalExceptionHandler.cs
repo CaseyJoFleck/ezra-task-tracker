@@ -2,18 +2,29 @@ using System.Diagnostics;
 using CareOps.Application.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace CareOps.Api.Exceptions;
 
 public sealed class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
+    private readonly IHostEnvironment _env;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) => _logger = logger;
+    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IHostEnvironment env)
+    {
+        _logger = logger;
+        _env = env;
+    }
 
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         var traceId = Activity.Current?.Id ?? httpContext.TraceIdentifier;
+
+        if (exception is DbUpdateException dbx && dbx.InnerException is SqliteException sqlInner)
+            exception = sqlInner;
 
         switch (exception)
         {
@@ -37,14 +48,31 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await httpContext.Response.WriteAsJsonAsync(validation, cancellationToken);
                 return true;
+            case SqliteException sql:
+                _logger.LogWarning(sql, "SQLite error. TraceId: {TraceId}", traceId);
+                var sqlDetail = _env.IsDevelopment()
+                    ? sql.Message
+                    : "The database is busy or unavailable. Please retry.";
+                await WriteProblemAsync(
+                    httpContext,
+                    StatusCodes.Status503ServiceUnavailable,
+                    "Database unavailable",
+                    sqlDetail,
+                    traceToken: traceId,
+                    cancellationToken: cancellationToken);
+                return true;
         }
 
         _logger.LogError(exception, "Unhandled exception. TraceId: {TraceId}", traceId);
+        var detail = _env.IsDevelopment()
+            ? $"{exception.GetType().Name}: {exception.Message}\n{exception.InnerException?.Message}".Trim()
+            : "An unexpected error occurred.";
+
         await WriteProblemAsync(
             httpContext,
             StatusCodes.Status500InternalServerError,
             "Server Error",
-            "An unexpected error occurred.",
+            detail,
             traceId,
             cancellationToken);
         return true;
@@ -55,7 +83,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         int status,
         string title,
         string detail,
-        string traceId,
+        string traceToken,
         CancellationToken cancellationToken)
     {
         httpContext.Response.StatusCode = status;
@@ -66,7 +94,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             Status = status,
             Instance = httpContext.Request.Path,
         };
-        problem.Extensions["traceId"] = traceId;
+        problem.Extensions["traceId"] = traceToken;
         await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
     }
 }

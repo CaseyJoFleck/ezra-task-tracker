@@ -1,4 +1,5 @@
 using CareOps.Application.Members;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -10,8 +11,13 @@ namespace CareOps.Api.Controllers;
 public sealed class MembersController : ControllerBase
 {
     private readonly IMemberService _members;
+    private readonly IValidator<CreateMemberRequest> _createValidator;
 
-    public MembersController(IMemberService members) => _members = members;
+    public MembersController(IMemberService members, IValidator<CreateMemberRequest> createValidator)
+    {
+        _members = members;
+        _createValidator = createValidator;
+    }
 
     /// <summary>List all members.</summary>
     [HttpGet]
@@ -29,6 +35,14 @@ public sealed class MembersController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<MemberResponse>> Create([FromBody] CreateMemberRequest request, CancellationToken cancellationToken)
     {
+        var vr = await _createValidator.ValidateAsync(request, cancellationToken);
+        if (!vr.IsValid)
+        {
+            foreach (var e in vr.Errors)
+                ModelState.AddModelError(e.PropertyName, e.ErrorMessage);
+            return ValidationProblem(ModelState);
+        }
+
         var created = await _members.CreateAsync(request, cancellationToken);
         return Created($"/api/members/{created.Id}", created);
     }

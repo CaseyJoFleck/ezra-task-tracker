@@ -56,9 +56,12 @@ builder.Services.AddCors(options =>
     });
 });
 
+var isTest = builder.Environment.IsEnvironment("Testing");
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    var globalLimit = isTest ? 100_000 : 100;
+    var mutatingLimit = isTest ? 100_000 : 30;
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
     {
         var key = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -66,7 +69,7 @@ builder.Services.AddRateLimiter(options =>
             key,
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 100,
+                PermitLimit = globalLimit,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0,
             });
@@ -79,7 +82,7 @@ builder.Services.AddRateLimiter(options =>
             key,
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 30,
+                PermitLimit = mutatingLimit,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0,
             });
@@ -105,7 +108,7 @@ app.UseExceptionHandler();
 app.UseHttpLogging();
 app.UseRouting();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
 {
     app.UseSwagger();
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Care Operations Task API v1"));
@@ -125,3 +128,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+// Exposes Program to integration tests (WebApplicationFactory<Program>).
+public partial class Program { }

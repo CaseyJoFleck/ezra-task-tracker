@@ -1,5 +1,6 @@
 using CareOps.Application.Tasks;
 using CareOps.Domain;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -11,14 +12,27 @@ namespace CareOps.Api.Controllers;
 public sealed class TasksController : ControllerBase
 {
     private readonly ITaskService _tasks;
+    private readonly IValidator<CreateTaskRequest> _createValidator;
+    private readonly IValidator<UpdateTaskRequest> _updateValidator;
+    private readonly IValidator<UpdateTaskStatusRequest> _patchStatusValidator;
 
-    public TasksController(ITaskService tasks) => _tasks = tasks;
+    public TasksController(
+        ITaskService tasks,
+        IValidator<CreateTaskRequest> createValidator,
+        IValidator<UpdateTaskRequest> updateValidator,
+        IValidator<UpdateTaskStatusRequest> patchStatusValidator)
+    {
+        _tasks = tasks;
+        _createValidator = createValidator;
+        _updateValidator = updateValidator;
+        _patchStatusValidator = patchStatusValidator;
+    }
 
     /// <summary>List tasks with optional filters.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<TaskItemResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<TaskItemResponse>>> GetList(
-        [FromQuery] TaskStatus? status,
+        [FromQuery] TaskItemStatus? status,
         [FromQuery] TaskPriority? priority,
         [FromQuery] Guid? assigneeMemberId,
         [FromQuery] string? search,
@@ -27,6 +41,9 @@ public sealed class TasksController : ControllerBase
         [FromQuery] bool? overdueOnly = null,
         CancellationToken cancellationToken = default)
     {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
         var query = new TaskListQuery
         {
             Status = status,
@@ -58,6 +75,14 @@ public sealed class TasksController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<TaskItemResponse>> Create([FromBody] CreateTaskRequest request, CancellationToken cancellationToken)
     {
+        var vr = await _createValidator.ValidateAsync(request, cancellationToken);
+        if (!vr.IsValid)
+        {
+            foreach (var e in vr.Errors)
+                ModelState.AddModelError(e.PropertyName, e.ErrorMessage);
+            return ValidationProblem(ModelState);
+        }
+
         var created = await _tasks.CreateAsync(request, cancellationToken);
         return Created($"/api/tasks/{created.Id}", created);
     }
@@ -70,6 +95,14 @@ public sealed class TasksController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TaskItemResponse>> Update(Guid id, [FromBody] UpdateTaskRequest request, CancellationToken cancellationToken)
     {
+        var vr = await _updateValidator.ValidateAsync(request, cancellationToken);
+        if (!vr.IsValid)
+        {
+            foreach (var e in vr.Errors)
+                ModelState.AddModelError(e.PropertyName, e.ErrorMessage);
+            return ValidationProblem(ModelState);
+        }
+
         var updated = await _tasks.UpdateAsync(id, request, cancellationToken);
         return Ok(updated);
     }
@@ -82,6 +115,14 @@ public sealed class TasksController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TaskItemResponse>> PatchStatus(Guid id, [FromBody] UpdateTaskStatusRequest request, CancellationToken cancellationToken)
     {
+        var vr = await _patchStatusValidator.ValidateAsync(request, cancellationToken);
+        if (!vr.IsValid)
+        {
+            foreach (var e in vr.Errors)
+                ModelState.AddModelError(e.PropertyName, e.ErrorMessage);
+            return ValidationProblem(ModelState);
+        }
+
         var updated = await _tasks.UpdateStatusAsync(id, request, cancellationToken);
         return Ok(updated);
     }

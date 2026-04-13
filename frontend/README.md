@@ -1,5 +1,17 @@
 # Frontend (skeleton)
 
-React + TypeScript + Vite will be scaffolded here in a later phase (Tailwind, TanStack Query, React Hook Form + Zod).
+**Planned:** React + TypeScript + Vite, Tailwind CSS, TanStack Query, React Hook Form + Zod (see repo root `README.md` and `docs/`).
 
-The [Dockerfile](./Dockerfile) currently serves a **static placeholder page** so `docker compose` can build a full stack before the app exists.
+The [Dockerfile](./Dockerfile) serves a **static placeholder page** so `docker compose` can run a full stack before the real app exists.
+
+## Testing
+
+There is no frontend test suite yet. After the Vite app is added, typical commands will be along the lines of:
+
+```bash
+npm install
+npm run build
+npm run test        # when tests are configured
+```
+
+Until then, verify the placeholder by opening **http://localhost:3000** when the `web` service is up via Docker Compose.

@@ -37,33 +37,36 @@ public sealed class TaskService : ITaskService
             q = q.Where(t => t.Title.Contains(s));
         }
 
+        // SQLite + EF Core 10: DateTimeOffset predicates and some enum comparisons may not translate.
+        // Filter overdue after materialization (same as in-memory sort below).
+        var list = await q.ToListAsync(cancellationToken);
+
         if (query.OverdueOnly == true)
         {
             var now = DateTimeOffset.UtcNow;
-            q = q.Where(t =>
+            list = list.Where(t =>
                 t.DueDateUtc != null
                 && t.DueDateUtc < now
-                && t.Status != TaskStatus.Completed);
+                && t.Status != TaskItemStatus.Completed).ToList();
         }
 
         var sortBy = (query.SortBy ?? "created").ToLowerInvariant();
         var desc = string.Equals(query.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
 
-        q = sortBy switch
+        IEnumerable<TaskItem> ordered = sortBy switch
         {
             "due" => desc
-                ? q.OrderByDescending(t => t.DueDateUtc).ThenByDescending(t => t.CreatedAtUtc)
-                : q.OrderBy(t => t.DueDateUtc).ThenBy(t => t.CreatedAtUtc),
+                ? list.OrderByDescending(t => t.DueDateUtc).ThenByDescending(t => t.CreatedAtUtc)
+                : list.OrderBy(t => t.DueDateUtc).ThenBy(t => t.CreatedAtUtc),
             "priority" => desc
-                ? q.OrderByDescending(t => t.Priority).ThenByDescending(t => t.CreatedAtUtc)
-                : q.OrderBy(t => t.Priority).ThenBy(t => t.CreatedAtUtc),
+                ? list.OrderByDescending(t => t.Priority).ThenByDescending(t => t.CreatedAtUtc)
+                : list.OrderBy(t => t.Priority).ThenBy(t => t.CreatedAtUtc),
             _ => desc
-                ? q.OrderByDescending(t => t.CreatedAtUtc)
-                : q.OrderBy(t => t.CreatedAtUtc),
+                ? list.OrderByDescending(t => t.CreatedAtUtc)
+                : list.OrderBy(t => t.CreatedAtUtc),
         };
 
-        var list = await q.ToListAsync(cancellationToken);
-        return list.Select(Map).ToList();
+        return ordered.Select(Map).ToList();
     }
 
     public async Task<TaskItemResponse> GetAsync(Guid id, CancellationToken cancellationToken = default)
@@ -94,7 +97,7 @@ public sealed class TaskService : ITaskService
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
         };
-        ApplyCompletionTimestamps(entity, entity.Status);
+        TaskItemRules.ApplyCompletionTimestamp(entity, entity.Status, now);
         _db.TaskItems.Add(entity);
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -118,7 +121,7 @@ public sealed class TaskService : ITaskService
         entity.AssigneeMemberId = request.AssigneeMemberId;
         entity.DueDateUtc = request.DueDateUtc;
         entity.UpdatedAtUtc = DateTimeOffset.UtcNow;
-        ApplyCompletionTimestamps(entity, entity.Status);
+        TaskItemRules.ApplyCompletionTimestamp(entity, entity.Status, DateTimeOffset.UtcNow);
 
         await _db.SaveChangesAsync(cancellationToken);
         await _db.TaskItems.Entry(entity).Reference(e => e.Assignee).LoadAsync(cancellationToken);
@@ -131,9 +134,10 @@ public sealed class TaskService : ITaskService
         if (entity is null)
             throw new NotFoundException("Task not found.");
 
+        var utc = DateTimeOffset.UtcNow;
         entity.Status = request.Status;
-        entity.UpdatedAtUtc = DateTimeOffset.UtcNow;
-        ApplyCompletionTimestamps(entity, request.Status);
+        entity.UpdatedAtUtc = utc;
+        TaskItemRules.ApplyCompletionTimestamp(entity, request.Status, utc);
         await _db.SaveChangesAsync(cancellationToken);
         await _db.TaskItems.Entry(entity).Reference(e => e.Assignee).LoadAsync(cancellationToken);
         return Map(entity);
@@ -148,18 +152,6 @@ public sealed class TaskService : ITaskService
         await _db.SaveChangesAsync(cancellationToken);
     }
 
-    private static void ApplyCompletionTimestamps(TaskItem entity, TaskStatus status)
-    {
-        if (status == TaskStatus.Completed)
-        {
-            entity.CompletedAtUtc ??= DateTimeOffset.UtcNow;
-        }
-        else
-        {
-            entity.CompletedAtUtc = null;
-        }
-    }
-
     private async Task EnsureMemberExistsAsync(Guid memberId, CancellationToken cancellationToken)
     {
         var exists = await _db.Members.AsNoTracking().AnyAsync(m => m.Id == memberId, cancellationToken);
@@ -170,9 +162,7 @@ public sealed class TaskService : ITaskService
     private static TaskItemResponse Map(TaskItem t)
     {
         var now = DateTimeOffset.UtcNow;
-        var overdue = t.DueDateUtc.HasValue
-                      && t.DueDateUtc < now
-                      && t.Status != TaskStatus.Completed;
+        var overdue = TaskItemRules.IsOverdue(t.DueDateUtc, t.Status, now);
         return new TaskItemResponse(
             t.Id,
             t.Title,

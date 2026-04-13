@@ -4,7 +4,7 @@ namespace CareOps.Application.Tasks;
 
 public sealed class TaskListQuery
 {
-    public TaskStatus? Status { get; set; }
+    public TaskItemStatus? Status { get; set; }
     public TaskPriority? Priority { get; set; }
     public Guid? AssigneeMemberId { get; set; }
     public string? Search { get; set; }
