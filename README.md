@@ -6,6 +6,16 @@ This repository is a **production-minded MVP**: a single-page **internal operati
 
 This root `README.md` is the primary reviewer-facing guide.
 
+## Why this scope
+
+I kept the assignment centered on a **task management** application, but I chose a **light care-operations framing** so the example feels relevant to **Ezra’s mission**. I intentionally **avoided** modeling patients, medical records, or other clinical/compliance-heavy workflows because I wanted to stay aligned with the prompt and keep the scope focused on the **core task-management problem** (CRUD, assignment, filters, sorting, and quality bar for API + UI).
+
+### Why Ezra
+
+This work is personally meaningful. My dad died from cancer when I was 20 - he was nearly recovered when it metastasized. I believe better **coordination and follow-through** across the care journey can catch issues earlier and save lives. Ezra’s focus on that problem is why I want to contribute; this project is my take on a **small, honest slice** of operational tooling—**not** clinical software, but **care-adjacent** enough to show how I think about mission-aligned product scope.
+
+---
+
 ## Fastest review path
 
 Use Docker Compose from the repository root:
@@ -50,18 +60,6 @@ Open:
 ### Sort: priority
 ![Sort by priority](docs/images/sort_by_priority.png)
 
-## Documentation Map
-
-- Root `README.md`: primary reviewer guide with project overview, setup, architecture summary, tradeoffs, and testing
-- `backend/README.md`: backend-specific development notes and commands
-- `frontend/README.md`: frontend-specific development notes and commands
-- `docs/architecture.md`: architecture diagrams and key technical decisions
-- `docs/adr-001-key-decisions.md`: architecture decision record and tradeoffs
-- `docs/product-brief.md`: product framing, scope, and assumptions
-- `docs/implementation-plan.md`: phased implementation notes
-
----
-
 ## Local development
 
 Start with the Docker Compose review path below, then use manual setup for day-to-day local development.
@@ -70,18 +68,7 @@ Start with the Docker Compose review path below, then use manual setup for day-t
 
 ### Docker review path (recommended)
 
-From the repository root:
-
-```bash
-cp .env.example .env   # optional: adjust ports
-docker compose build
-docker compose up
-```
-
-- Web app: **http://localhost:3000**
-- API base: **http://localhost:5000**
-- Swagger (Development): **http://localhost:5000/swagger**
-- Health: **http://localhost:5000/health**
+Use the **Fastest review path** section above (same commands and URLs).
 
 ### Manual local development
 
@@ -109,16 +96,6 @@ npm run dev
 Open **http://localhost:5173** (Vite proxies `/api` to **http://localhost:5000**).
 
 More frontend-specific notes: [frontend/README.md](frontend/README.md).
-
----
-
-## Why this scope
-
-I kept the assignment centered on a **task management** application, but I chose a **light care-operations framing** so the example feels relevant to **Ezra’s mission**. I intentionally **avoided** modeling patients, medical records, or other clinical/compliance-heavy workflows because I wanted to stay aligned with the prompt and keep the scope focused on the **core task-management problem** (CRUD, assignment, filters, sorting, and quality bar for API + UI).
-
-### Why Ezra
-
-This work is personally meaningful. My dad died from cancer when I was 20 - he was nearly recovered when it metastasized. I believe better **coordination and follow-through** across the care journey can catch issues earlier and save lives. Ezra’s focus on that problem is why I want to contribute; this project is my take on a **small, honest slice** of operational tooling—**not** clinical software, but **care-adjacent** enough to show how I think about mission-aligned product scope.
 
 ---
 
@@ -302,15 +279,13 @@ ezra-task-tracker/
 
 ---
 
-## Additional documentation
+## Documentation Map
 
-| Document | Contents |
-|----------|----------|
-| [docs/product-brief.md](docs/product-brief.md) | Problem, scope, personas, assumptions |
-| [docs/architecture.md](docs/architecture.md) | Diagrams, entities, API notes |
-| [docs/adr-001-key-decisions.md](docs/adr-001-key-decisions.md) | ADR: stack and layering |
-| [docs/implementation-plan.md](docs/implementation-plan.md) | Phased delivery notes |
-| [frontend/README.md](frontend/README.md) | Frontend-only commands, E2E details |
+- [Root `README.md`](README.md): primary reviewer guide (overview, setup, API summary, testing, tradeoffs)
+- [`backend/README.md`](backend/README.md) / [`frontend/README.md`](frontend/README.md): component-specific development notes and commands
+- [`docs/architecture.md`](docs/architecture.md): architecture diagrams and implementation details
+- [`docs/adr-001-key-decisions.md`](docs/adr-001-key-decisions.md): key technical decisions and tradeoffs
+- [`docs/product-brief.md`](docs/product-brief.md) / [`docs/implementation-plan.md`](docs/implementation-plan.md): product framing and phased plan
 
 ---
 

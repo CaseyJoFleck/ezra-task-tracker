@@ -47,7 +47,7 @@ public sealed class TaskService : ITaskService
             q = q.Where(t => t.Title.Contains(s));
         }
 
-        // SQLite + EF Core 10: DateTimeOffset predicates and some enum comparisons may not translate.
+        // SQLite + EF Core: DateTimeOffset predicates and some enum comparisons may not translate.
         // Filter overdue after materialization (same as in-memory sort below).
         var list = await q.ToListAsync(cancellationToken);
 
