@@ -98,8 +98,10 @@ Base path **`/api`**. JSON enums are **camelCase**.
 ## Operational considerations
 
 - **SQLite** file: default local path is `careops.db` under the API working directory; Docker Compose stores the DB in a **named volume** (`sqlite_data` → `/data/careops.db` in the API container).
-- **Logs:** ASP.NET Core logging is configured in `appsettings`; structured operational logs are suitable for a real deployment behind a reverse proxy.
-- **Health:** use **`GET /health`** for load balancers or compose healthchecks.
+- **Logs:** ASP.NET Core logging is configured in `appsettings`; request-level **HTTP logging** (method, path, status, duration) is enabled in `Program.cs` for operational visibility. In production you would typically ship logs to a collector and use **JSON** or another structured format at the host.
+- **Health:** use **`GET /health`** for load balancers or compose healthchecks (includes a **database** check).
+
+**Beyond this MVP:** a fuller deployment would monitor **golden signals** (latency, traffic, errors, saturation) and add **application metrics** such as task creation rate, overdue task count, mutation success rate, and rate-limited request counts—none of which are wired here to keep scope small.
 
 ---
 

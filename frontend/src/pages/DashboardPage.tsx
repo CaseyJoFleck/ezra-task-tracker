@@ -12,7 +12,7 @@ import {
 import { fetchMembers } from "@/api/membersApi";
 import { ControlsRow } from "@/components/layout/ControlsRow";
 import { Header } from "@/components/layout/Header";
-import { StatsRow } from "@/components/layout/StatsRow";
+import { StatsRow, type StatCardKey } from "@/components/layout/StatsRow";
 import { ConfirmDeleteDialog } from "@/components/modals/ConfirmDeleteDialog";
 import { CreateMemberModal } from "@/components/modals/CreateMemberModal";
 import { ManageMembersModal } from "@/components/modals/ManageMembersModal";
@@ -32,6 +32,8 @@ export function DashboardPage() {
   const [assignee, setAssignee] = useState<string | "all" | "unassigned">("all");
   const [sortBy, setSortBy] = useState<TaskSortField>("created");
   const [sortDir, setSortDir] = useState<SortDirection>("desc");
+  const [overdueFilter, setOverdueFilter] = useState(false);
+  const [activeStat, setActiveStat] = useState<StatCardKey | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -44,8 +46,9 @@ export function DashboardPage() {
     if (priority !== "all") p.priority = priority;
     if (assignee !== "all" && assignee !== "unassigned") p.assigneeMemberId = assignee;
     if (search.trim()) p.search = search;
+    if (overdueFilter) p.overdueOnly = true;
     return p;
-  }, [search, status, priority, assignee, sortBy, sortDir]);
+  }, [search, status, priority, assignee, sortBy, sortDir, overdueFilter]);
 
   const tasksListQuery = useQuery({
     queryKey: ["tasks", "list", listParams, assignee === "unassigned"] as const,
@@ -130,6 +133,63 @@ export function DashboardPage() {
     deleteMutation.mutate(selectedTask.id);
   };
 
+  const handleToggleStat = (key: StatCardKey) => {
+    if (activeStat === key) {
+      setActiveStat(null);
+      setStatus("all");
+      setOverdueFilter(false);
+      return;
+    }
+    setActiveStat(key);
+    if (key === "total") {
+      setStatus("all");
+      setOverdueFilter(false);
+    } else if (key === "inProgress") {
+      setStatus("inProgress");
+      setOverdueFilter(false);
+    } else if (key === "overdue") {
+      setStatus("all");
+      setOverdueFilter(true);
+    } else if (key === "completed") {
+      setStatus("completed");
+      setOverdueFilter(false);
+    } else {
+      setStatus("canceled");
+      setOverdueFilter(false);
+    }
+  };
+
+  const handleSearchChange = (v: string) => {
+    setSearch(v);
+    setActiveStat(null);
+  };
+
+  const handleStatusChange = (v: TaskItemStatus | "all") => {
+    setStatus(v);
+    setOverdueFilter(false);
+    setActiveStat(null);
+  };
+
+  const handlePriorityChange = (v: TaskPriority | "all") => {
+    setPriority(v);
+    setActiveStat(null);
+  };
+
+  const handleAssigneeChange = (v: string | "all" | "unassigned") => {
+    setAssignee(v);
+    setActiveStat(null);
+  };
+
+  const handleSortByChange = (v: TaskSortField) => {
+    setSortBy(v);
+    setActiveStat(null);
+  };
+
+  const handleSortDirChange = (v: SortDirection) => {
+    setSortDir(v);
+    setActiveStat(null);
+  };
+
   const listLoading = tasksListQuery.isPending;
   const listError = tasksListQuery.isError;
   const errorMessage = (() => {
@@ -151,21 +211,23 @@ export function DashboardPage() {
           overdue={stats.overdue}
           completed={stats.completed}
           canceled={stats.canceled}
+          activeStat={activeStat}
+          onToggleStat={handleToggleStat}
         />
 
         <ControlsRow
           search={search}
-          onSearchChange={setSearch}
+          onSearchChange={handleSearchChange}
           status={status}
-          onStatusChange={setStatus}
+          onStatusChange={handleStatusChange}
           priority={priority}
-          onPriorityChange={setPriority}
+          onPriorityChange={handlePriorityChange}
           assignee={assignee}
-          onAssigneeChange={setAssignee}
+          onAssigneeChange={handleAssigneeChange}
           sortBy={sortBy}
-          onSortByChange={setSortBy}
+          onSortByChange={handleSortByChange}
           sortDir={sortDir}
-          onSortDirChange={setSortDir}
+          onSortDirChange={handleSortDirChange}
           members={members}
           onNewMember={() => setCreateMemberOpen(true)}
           onManageMembers={() => setManageMembersOpen(true)}

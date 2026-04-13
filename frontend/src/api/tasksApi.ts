@@ -14,6 +14,8 @@ export type TaskListParams = {
   search?: string;
   sortBy: TaskSortField;
   sortDir: SortDirection;
+  /** When true, server returns only non-completed tasks past due (see API `overdueOnly`). */
+  overdueOnly?: boolean;
 };
 
 function buildTasksQuery(params: Partial<TaskListParams>): string {
@@ -24,6 +26,7 @@ function buildTasksQuery(params: Partial<TaskListParams>): string {
   if (params.search?.trim()) sp.set("search", params.search.trim());
   if (params.sortBy) sp.set("sortBy", params.sortBy);
   if (params.sortDir) sp.set("sortDir", params.sortDir);
+  if (params.overdueOnly === true) sp.set("overdueOnly", "true");
   const q = sp.toString();
   return q ? `?${q}` : "";
 }
@@ -47,6 +50,7 @@ export async function fetchTasksList(
   if (params.priority) serverParams.priority = params.priority;
   if (params.search?.trim()) serverParams.search = params.search;
   if (params.assigneeMemberId) serverParams.assigneeMemberId = params.assigneeMemberId;
+  if (params.overdueOnly === true) serverParams.overdueOnly = true;
 
   const list = await apiFetch<TaskItem[]>(`/api/tasks${buildTasksQuery(serverParams)}`);
   if (unassignedOnly) {
