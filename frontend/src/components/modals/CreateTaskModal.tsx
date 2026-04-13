@@ -1,6 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useEffect } from "react";
+import { createTask } from "@/api/tasksApi";
+import { taskFormToCreateBody } from "@/api/formMappers";
+import { applyServerValidationErrors } from "@/api/validation";
+import { getProblemMessage, ApiError } from "@/api/client";
 import { Modal } from "@/components/modals/Modal";
 import { Button } from "@/components/ui/Button";
 import type { Member } from "@/types/member";
@@ -13,11 +19,13 @@ type Props = {
 };
 
 export function CreateTaskModal({ open, onClose, members }: Props) {
+  const queryClient = useQueryClient();
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    setError,
+    formState: { errors },
   } = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
@@ -30,17 +38,44 @@ export function CreateTaskModal({ open, onClose, members }: Props) {
     },
   });
 
-  const onSubmit = async (_data: TaskFormValues) => {
-    await new Promise((r) => setTimeout(r, 600));
-    toast.success("Task created", {
-      description: "This is a demo — connect to the API when ready.",
-    });
-    reset();
-    onClose();
+  useEffect(() => {
+    if (open) {
+      reset({
+        title: "",
+        description: "",
+        status: "todo",
+        priority: "medium",
+        assigneeMemberId: "",
+        dueDate: "",
+      });
+    }
+  }, [open, reset]);
+
+  const mutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      toast.success("Task created");
+      reset();
+      onClose();
+    },
+    onError: (err: unknown) => {
+      if (!applyServerValidationErrors(err, setError)) {
+        const msg =
+          err instanceof ApiError ? getProblemMessage(err.body) : "Could not create task";
+        toast.error(msg);
+      }
+    },
+  });
+
+  const onSubmit = (data: TaskFormValues) => {
+    mutation.mutate(taskFormToCreateBody(data));
   };
 
+  const busy = mutation.isPending;
+
   return (
-    <Modal open={open} onClose={isSubmitting ? () => {} : onClose} title="Create task" size="lg">
+    <Modal open={open} onClose={busy ? () => {} : onClose} title="Create task" size="lg">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label htmlFor="create-title" className="block text-sm font-medium text-slate-700">
@@ -49,7 +84,7 @@ export function CreateTaskModal({ open, onClose, members }: Props) {
           <input
             id="create-title"
             autoComplete="off"
-            disabled={isSubmitting}
+            disabled={busy}
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm outline-none ring-slate-300 focus:ring-2 disabled:bg-slate-50"
             {...register("title")}
           />
@@ -64,7 +99,7 @@ export function CreateTaskModal({ open, onClose, members }: Props) {
           <textarea
             id="create-desc"
             rows={3}
-            disabled={isSubmitting}
+            disabled={busy}
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm outline-none ring-slate-300 focus:ring-2 disabled:bg-slate-50"
             {...register("description")}
           />
@@ -79,13 +114,14 @@ export function CreateTaskModal({ open, onClose, members }: Props) {
             </label>
             <select
               id="create-status"
-              disabled={isSubmitting}
+              disabled={busy}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm outline-none ring-slate-300 focus:ring-2 disabled:bg-slate-50"
               {...register("status")}
             >
               <option value="todo">Todo</option>
               <option value="inProgress">In Progress</option>
               <option value="completed">Completed</option>
+              <option value="canceled">Canceled</option>
             </select>
           </div>
           <div>
@@ -94,7 +130,7 @@ export function CreateTaskModal({ open, onClose, members }: Props) {
             </label>
             <select
               id="create-priority"
-              disabled={isSubmitting}
+              disabled={busy}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm outline-none ring-slate-300 focus:ring-2 disabled:bg-slate-50"
               {...register("priority")}
             >
@@ -111,7 +147,7 @@ export function CreateTaskModal({ open, onClose, members }: Props) {
             </label>
             <select
               id="create-assignee"
-              disabled={isSubmitting}
+              disabled={busy}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm outline-none ring-slate-300 focus:ring-2 disabled:bg-slate-50"
               {...register("assigneeMemberId")}
             >
@@ -130,18 +166,18 @@ export function CreateTaskModal({ open, onClose, members }: Props) {
             <input
               id="create-due"
               type="datetime-local"
-              disabled={isSubmitting}
+              disabled={busy}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm outline-none ring-slate-300 focus:ring-2 disabled:bg-slate-50"
               {...register("dueDate")}
             />
           </div>
         </div>
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving…" : "Create task"}
+          <Button type="submit" disabled={busy}>
+            {busy ? "Saving…" : "Create task"}
           </Button>
         </div>
       </form>

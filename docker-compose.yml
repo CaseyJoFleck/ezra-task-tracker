@@ -1,4 +1,4 @@
-# Care Operations Task Tracker — API + placeholder web UI.
+# Care Operations Task Tracker — API + SPA (nginx proxies /api to the API service).
 
 services:
   api:

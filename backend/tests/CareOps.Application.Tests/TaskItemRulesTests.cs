@@ -9,7 +9,7 @@ public class TaskItemRulesTests
     private static readonly DateTimeOffset FixedNow = DateTimeOffset.Parse("2026-04-12T12:00:00Z");
 
     [Fact]
-    public void IsOverdue_true_when_past_due_and_not_completed()
+    public void IsOverdue_true_when_past_due_and_active()
     {
         var due = FixedNow.AddDays(-1);
         TaskItemRules.IsOverdue(due, TaskItemStatus.Todo, FixedNow).Should().BeTrue();
@@ -17,10 +17,11 @@ public class TaskItemRulesTests
     }
 
     [Fact]
-    public void IsOverdue_false_when_completed_or_no_due_or_future_due()
+    public void IsOverdue_false_when_terminal_or_no_due_or_future_due()
     {
         var past = FixedNow.AddDays(-1);
         TaskItemRules.IsOverdue(past, TaskItemStatus.Completed, FixedNow).Should().BeFalse();
+        TaskItemRules.IsOverdue(past, TaskItemStatus.Canceled, FixedNow).Should().BeFalse();
         TaskItemRules.IsOverdue(null, TaskItemStatus.Todo, FixedNow).Should().BeFalse();
         TaskItemRules.IsOverdue(FixedNow.AddDays(1), TaskItemStatus.Todo, FixedNow).Should().BeFalse();
     }
@@ -38,6 +39,12 @@ public class TaskItemRulesTests
         entity.CompletedAtUtc.Should().Be(utc);
 
         TaskItemRules.ApplyCompletionTimestamp(entity, TaskItemStatus.Todo, utc.AddHours(2));
+        entity.CompletedAtUtc.Should().BeNull();
+
+        TaskItemRules.ApplyCompletionTimestamp(entity, TaskItemStatus.Completed, utc.AddHours(3));
+        entity.CompletedAtUtc.Should().NotBeNull();
+
+        TaskItemRules.ApplyCompletionTimestamp(entity, TaskItemStatus.Canceled, utc.AddHours(4));
         entity.CompletedAtUtc.Should().BeNull();
     }
 }

@@ -68,7 +68,7 @@ erDiagram
 | `Id` | `Guid` | PK |
 | `Title` | `string` | required, max 500 |
 | `Description` | `string?` | optional, max 4000 |
-| `Status` | enum → string | `Pending`, `InProgress`, `Done`, `Cancelled` |
+| `Status` | enum → string | `Pending`, `InProgress`, `Done`, `Canceled` |
 | `Priority` | enum → string | `Low`, `Medium`, `High`, `Urgent` |
 | `AssigneeMemberId` | `Guid?` | FK → `Member.Id`, optional |
 | `DueDateUtc` | `DateTimeOffset?` | optional |
@@ -80,7 +80,7 @@ erDiagram
 
 - **Complete:** `Status = Done`, `CompletedAtUtc = UtcNow` (idempotent if already done).
 - **Reopen:** `Status = Pending` or `InProgress` (product choice: default to `Pending`), `CompletedAtUtc = null`.
-- **Overdue (UI + API filter):** `DueDateUtc != null` AND `DueDateUtc < UtcNow` AND `Status` not in (`Done`, `Cancelled`).
+- **Overdue (UI + API filter):** `DueDateUtc != null` AND `DueDateUtc < UtcNow` AND `Status` not in (`Done`, `Canceled`).
 
 ---
 
@@ -293,12 +293,10 @@ Deeper rationale: [adr-001-key-decisions.md](./adr-001-key-decisions.md).
 |--------|--------|
 | **Stack** | React (Vite), TypeScript, Tailwind CSS, TanStack Query, React Hook Form + Zod, Sonner toasts |
 | **Shape** | Single-page dashboard: header, stats, search/filters/sort, two-column task list + detail panel, modals (create/edit task, create member, delete confirm) |
-| **Data today** | **In-memory mocks** (`frontend/src/data/mockData.ts`, loaded via `frontend/src/api/mockQueries.ts`). Simulated latency exercises loading/skeleton states; a dev-only toggle can force a task-list error state. |
-| **Mutations** | Forms validate with Zod; successful submits show toasts but **do not** persist or refresh lists until real `fetch` calls and TanStack Query `invalidateQueries` (or cache updates) are implemented. |
-| **Dev proxy** | `npm run dev` proxies `/api` and `/health` to `http://localhost:5000` so the SPA can call the backend same-origin during integration. |
+| **Data** | TanStack Query + `fetch` to **`/api/members`** and **`/api/tasks`** (see `frontend/src/api/`). Enums match backend JSON (**camelCase** string enums). |
+| **Mutations** | POST/PUT/PATCH/DELETE with `queryClient.invalidateQueries({ queryKey: ["tasks"] })` / `["members"]` after success; forms map ASP.NET validation errors into react-hook-form fields where possible. |
+| **Dev proxy** | `npm run dev` proxies `/api` and `/health` to `http://localhost:5000`. Optional **`VITE_API_BASE_URL`** when the SPA is built without a proxy. |
 | **Production image** | Multi-stage Dockerfile: `npm ci`, `npm run build`, nginx serves `dist/` with SPA fallback (`frontend/nginx.conf`). |
-
-**Next integration step:** Replace mock query functions with HTTP clients targeting `/api/members` and `/api/tasks`, map JSON (camelCase enums) to existing TypeScript types, and invalidate or update queries after POST/PUT/PATCH/DELETE.
 
 ---
 

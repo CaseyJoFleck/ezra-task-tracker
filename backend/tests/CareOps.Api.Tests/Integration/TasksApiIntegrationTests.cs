@@ -15,7 +15,7 @@ public class TasksApiIntegrationTests : IClassFixture<CareOpsApiFactory>
     public TasksApiIntegrationTests(CareOpsApiFactory factory) => _factory = factory;
 
     [Fact]
-    public async Task List_tasks_after_seed_returns_four_tasks()
+    public async Task List_tasks_after_seed_returns_five_tasks()
     {
         await _factory.ResetDatabaseAsync();
         var client = _factory.CreateClient();
@@ -23,7 +23,7 @@ public class TasksApiIntegrationTests : IClassFixture<CareOpsApiFactory>
         var res = await client.GetAsync("/api/tasks");
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var list = await res.Content.ReadFromJsonAsync<List<TaskItemResponse>>(ApiTestJson.Options);
-        list.Should().NotBeNull().And.HaveCount(4);
+        list.Should().NotBeNull().And.HaveCount(5);
     }
 
     [Fact]
@@ -105,6 +105,19 @@ public class TasksApiIntegrationTests : IClassFixture<CareOpsApiFactory>
     }
 
     [Fact]
+    public async Task List_tasks_filter_by_status_canceled()
+    {
+        await _factory.ResetDatabaseAsync();
+        var client = _factory.CreateClient();
+
+        var res = await client.GetAsync("/api/tasks?status=canceled");
+        res.StatusCode.Should().Be(HttpStatusCode.OK);
+        var list = await res.Content.ReadFromJsonAsync<List<TaskItemResponse>>(ApiTestJson.Options);
+        list.Should().NotBeNull();
+        list!.Should().OnlyContain(t => t.Status == TaskItemStatus.Canceled);
+    }
+
+    [Fact]
     public async Task List_tasks_search_finds_vendor_in_title()
     {
         await _factory.ResetDatabaseAsync();
@@ -118,7 +131,7 @@ public class TasksApiIntegrationTests : IClassFixture<CareOpsApiFactory>
     }
 
     [Fact]
-    public async Task List_tasks_sort_by_created_desc_first_is_newest_among_seed()
+    public async Task List_tasks_sort_by_created_desc_puts_terminal_statuses_last_then_newest_first()
     {
         await _factory.ResetDatabaseAsync();
         var client = _factory.CreateClient();
@@ -127,7 +140,19 @@ public class TasksApiIntegrationTests : IClassFixture<CareOpsApiFactory>
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var list = await res.Content.ReadFromJsonAsync<List<TaskItemResponse>>(ApiTestJson.Options);
         list.Should().NotBeNull();
-        list!.Should().BeInDescendingOrder(t => t.CreatedAtUtc);
+        var rows = list!;
+
+        var firstTerminal = rows.FindIndex(t => TaskItemRules.IsTerminalStatus(t.Status));
+        if (firstTerminal >= 0)
+        {
+            rows.Take(firstTerminal).Should().OnlyContain(t => !TaskItemRules.IsTerminalStatus(t.Status));
+            rows.Skip(firstTerminal).Should().OnlyContain(t => TaskItemRules.IsTerminalStatus(t.Status));
+        }
+
+        var active = rows.TakeWhile(t => !TaskItemRules.IsTerminalStatus(t.Status)).ToList();
+        var terminal = rows.SkipWhile(t => !TaskItemRules.IsTerminalStatus(t.Status)).ToList();
+        active.Should().BeInDescendingOrder(t => t.CreatedAtUtc);
+        terminal.Should().BeInDescendingOrder(t => t.CreatedAtUtc);
     }
 
     [Fact]

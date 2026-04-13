@@ -1,4 +1,5 @@
 using CareOps.Application.Abstractions;
+using CareOps.Application.Exceptions;
 using CareOps.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,7 @@ public interface IMemberService
 {
     Task<IReadOnlyList<MemberResponse>> ListAsync(CancellationToken cancellationToken = default);
     Task<MemberResponse> CreateAsync(CreateMemberRequest request, CancellationToken cancellationToken = default);
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
 public sealed class MemberService : IMemberService
@@ -40,5 +42,15 @@ public sealed class MemberService : IMemberService
         _db.Members.Add(entity);
         await _db.SaveChangesAsync(cancellationToken);
         return new MemberResponse(entity.Id, entity.DisplayName, entity.Email, entity.Title, entity.CreatedAtUtc);
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var entity = await _db.Members.FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
+        if (entity is null)
+            throw new NotFoundException("Member not found.");
+
+        _db.Members.Remove(entity);
+        await _db.SaveChangesAsync(cancellationToken);
     }
 }

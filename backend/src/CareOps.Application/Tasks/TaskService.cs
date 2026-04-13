@@ -47,25 +47,13 @@ public sealed class TaskService : ITaskService
             list = list.Where(t =>
                 t.DueDateUtc != null
                 && t.DueDateUtc < now
-                && t.Status != TaskItemStatus.Completed).ToList();
+                && TaskItemRules.IsActiveStatus(t.Status)).ToList();
         }
 
         var sortBy = (query.SortBy ?? "created").ToLowerInvariant();
         var desc = string.Equals(query.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
 
-        IEnumerable<TaskItem> ordered = sortBy switch
-        {
-            "due" => desc
-                ? list.OrderByDescending(t => t.DueDateUtc).ThenByDescending(t => t.CreatedAtUtc)
-                : list.OrderBy(t => t.DueDateUtc).ThenBy(t => t.CreatedAtUtc),
-            "priority" => desc
-                ? list.OrderByDescending(t => t.Priority).ThenByDescending(t => t.CreatedAtUtc)
-                : list.OrderBy(t => t.Priority).ThenBy(t => t.CreatedAtUtc),
-            _ => desc
-                ? list.OrderByDescending(t => t.CreatedAtUtc)
-                : list.OrderBy(t => t.CreatedAtUtc),
-        };
-
+        var ordered = ApplySort(list, sortBy, desc);
         return ordered.Select(Map).ToList();
     }
 
@@ -150,6 +138,26 @@ public sealed class TaskService : ITaskService
             throw new NotFoundException("Task not found.");
         _db.TaskItems.Remove(entity);
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Active (todo / in progress) first; terminal (completed / canceled) last. Within each group, applies the requested sort.
+    /// </summary>
+    private static IEnumerable<TaskItem> ApplySort(IReadOnlyList<TaskItem> list, string sortBy, bool desc)
+    {
+        var byCompletion = list.OrderBy(t => TaskItemRules.IsTerminalStatus(t.Status));
+        return sortBy switch
+        {
+            "due" => desc
+                ? byCompletion.ThenByDescending(t => t.DueDateUtc).ThenByDescending(t => t.CreatedAtUtc)
+                : byCompletion.ThenBy(t => t.DueDateUtc).ThenBy(t => t.CreatedAtUtc),
+            "priority" => desc
+                ? byCompletion.ThenByDescending(t => t.Priority).ThenByDescending(t => t.CreatedAtUtc)
+                : byCompletion.ThenBy(t => t.Priority).ThenBy(t => t.CreatedAtUtc),
+            _ => desc
+                ? byCompletion.ThenByDescending(t => t.CreatedAtUtc)
+                : byCompletion.ThenBy(t => t.CreatedAtUtc),
+        };
     }
 
     private async Task EnsureMemberExistsAsync(Guid memberId, CancellationToken cancellationToken)

@@ -4,7 +4,7 @@ Production-minded **internal** MVP for a small **care operations** team: tasks a
 
 **Backend:** ASP.NET Core **10** Web API, EF Core + SQLite, layered architecture, FluentValidation, health checks, rate limiting, Swagger, and automated tests.
 
-**Frontend:** React + TypeScript + **Vite** single-page dashboard (**Tailwind CSS**, **TanStack Query**, **React Hook Form** + **Zod**, **Sonner** toasts). The UI is fully scaffolded (layout, filters, modals, loading/empty/error states). **Task and member lists are still driven by in-memory mocks** in the browser—create/update actions show toasts but do **not** call the API yet, so new members or tasks will not appear in dropdowns until HTTP integration is added. See [frontend/README.md](frontend/README.md) and [docs/architecture.md](docs/architecture.md#frontend-current-state).
+**Frontend:** React + TypeScript + **Vite** single-page dashboard (**Tailwind CSS**, **TanStack Query**, **React Hook Form** + **Zod**, **Sonner** toasts), calling the backend **`/api`** routes for tasks and members (see [frontend/README.md](frontend/README.md)). Run the API on port **5000** when using `npm run dev` (Vite proxy), or set **`VITE_API_BASE_URL`** for builds without a proxy.
 
 ## Repository layout
 

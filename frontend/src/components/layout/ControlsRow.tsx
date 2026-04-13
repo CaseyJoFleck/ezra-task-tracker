@@ -1,4 +1,4 @@
-import { Search, UserPlus } from "lucide-react";
+import { Search, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import type { Member } from "@/types/member";
@@ -19,10 +19,11 @@ type Props = {
   onSortDirChange: (v: SortDirection) => void;
   members: Member[];
   onNewMember: () => void;
+  onManageMembers: () => void;
 };
 
 const selectClass =
-  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none ring-slate-300 focus:ring-2";
+  "block w-full min-w-0 max-w-full truncate rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-800 shadow-sm outline-none ring-slate-300 focus:ring-2";
 
 export function ControlsRow({
   search,
@@ -39,10 +40,11 @@ export function ControlsRow({
   onSortDirChange,
   members,
   onNewMember,
+  onManageMembers,
 }: Props) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-card lg:flex-row lg:items-end lg:gap-4">
-      <div className="relative min-w-0 flex-1">
+      <div className="relative w-full shrink-0 lg:max-w-[13rem] xl:max-w-[15rem]">
         <label htmlFor="task-search" className="sr-only">
           Search tasks
         </label>
@@ -61,8 +63,8 @@ export function ControlsRow({
           )}
         />
       </div>
-      <div className="grid flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-2">
-        <div>
+      <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-x-3 lg:gap-y-2">
+        <div className="min-w-0">
           <label htmlFor="filter-status" className="mb-1 block text-xs font-medium text-slate-600">
             Status
           </label>
@@ -72,13 +74,14 @@ export function ControlsRow({
             onChange={(e) => onStatusChange(e.target.value as TaskItemStatus | "all")}
             className={selectClass}
           >
-            <option value="all">All statuses</option>
+            <option value="all">All</option>
             <option value="todo">Todo</option>
             <option value="inProgress">In Progress</option>
             <option value="completed">Completed</option>
+            <option value="canceled">Canceled</option>
           </select>
         </div>
-        <div>
+        <div className="min-w-0">
           <label htmlFor="filter-priority" className="mb-1 block text-xs font-medium text-slate-600">
             Priority
           </label>
@@ -88,13 +91,13 @@ export function ControlsRow({
             onChange={(e) => onPriorityChange(e.target.value as TaskPriority | "all")}
             className={selectClass}
           >
-            <option value="all">All priorities</option>
+            <option value="all">All</option>
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
           </select>
         </div>
-        <div>
+        <div className="min-w-0">
           <label htmlFor="filter-assignee" className="mb-1 block text-xs font-medium text-slate-600">
             Assignee
           </label>
@@ -106,7 +109,7 @@ export function ControlsRow({
             }
             className={selectClass}
           >
-            <option value="all">All assignees</option>
+            <option value="all">All</option>
             <option value="unassigned">Unassigned</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
@@ -115,7 +118,7 @@ export function ControlsRow({
             ))}
           </select>
         </div>
-        <div>
+        <div className="min-w-0">
           <label htmlFor="sort" className="mb-1 block text-xs font-medium text-slate-600">
             Sort
           </label>
@@ -142,10 +145,21 @@ export function ControlsRow({
       </div>
       <div className="flex shrink-0 flex-col gap-1 border-t border-slate-100 pt-3 lg:border-t-0 lg:pt-0">
         <span className="text-xs font-medium text-slate-600">Team</span>
-        <Button type="button" variant="secondary" className="whitespace-nowrap" onClick={onNewMember}>
-          <UserPlus className="h-4 w-4" />
-          New member
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            className="whitespace-nowrap"
+            onClick={onManageMembers}
+          >
+            <Users className="h-4 w-4" />
+            Manage members
+          </Button>
+          <Button type="button" variant="secondary" className="whitespace-nowrap" onClick={onNewMember}>
+            <UserPlus className="h-4 w-4" />
+            New member
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -46,4 +46,15 @@ public sealed class MembersController : ControllerBase
         var created = await _members.CreateAsync(request, cancellationToken);
         return Created($"/api/members/{created.Id}", created);
     }
+
+    /// <summary>Delete a member. Tasks assigned to this member become unassigned.</summary>
+    [HttpDelete("{id:guid}")]
+    [EnableRateLimiting("mutating")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _members.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
 }

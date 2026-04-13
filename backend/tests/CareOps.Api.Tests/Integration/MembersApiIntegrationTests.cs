@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using CareOps.Api.Tests.Support;
 using CareOps.Application.Members;
+using CareOps.Application.Tasks;
 using FluentAssertions;
 
 namespace CareOps.Api.Tests.Integration;
@@ -54,5 +55,55 @@ public class MembersApiIntegrationTests : IClassFixture<CareOpsApiFactory>
         var body = new CreateMemberRequest { DisplayName = "" };
         var res = await client.PostAsJsonAsync("/api/members", body, ApiTestJson.Options);
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Delete_member_unknown_id_returns_404()
+    {
+        await _factory.ResetDatabaseAsync();
+        var client = _factory.CreateClient();
+
+        var res = await client.DeleteAsync($"/api/members/{Guid.NewGuid()}");
+        res.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Delete_member_returns_204_and_removes_from_list()
+    {
+        await _factory.ResetDatabaseAsync();
+        var client = _factory.CreateClient();
+
+        var listRes = await client.GetAsync("/api/members");
+        var list = await listRes.Content.ReadFromJsonAsync<List<MemberResponse>>(ApiTestJson.Options);
+        list.Should().NotBeNull().And.NotBeEmpty();
+        var id = list!.First().Id;
+
+        var del = await client.DeleteAsync($"/api/members/{id}");
+        del.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var after = await client.GetFromJsonAsync<List<MemberResponse>>("/api/members", ApiTestJson.Options);
+        after.Should().NotContain(m => m.Id == id);
+    }
+
+    [Fact]
+    public async Task Delete_member_unassigns_tasks_that_referenced_them()
+    {
+        await _factory.ResetDatabaseAsync();
+        var client = _factory.CreateClient();
+
+        var members = await client.GetFromJsonAsync<List<MemberResponse>>("/api/members", ApiTestJson.Options);
+        var alex = members!.First(m => m.DisplayName == "Alex Rivera");
+
+        var tasks = await client.GetFromJsonAsync<List<TaskItemResponse>>("/api/tasks", ApiTestJson.Options);
+        var assignedToAlex = tasks!.First(t => t.AssigneeMemberId == alex.Id);
+
+        var del = await client.DeleteAsync($"/api/members/{alex.Id}");
+        del.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var taskAgain = await client.GetFromJsonAsync<TaskItemResponse>(
+            $"/api/tasks/{assignedToAlex.Id}",
+            ApiTestJson.Options);
+        taskAgain!.AssigneeMemberId.Should().BeNull();
+        taskAgain.AssigneeDisplayName.Should().BeNull();
     }
 }

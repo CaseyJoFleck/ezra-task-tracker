@@ -1,34 +1,30 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { fetchMockMembers, fetchMockTasks } from "@/api/mockQueries";
+import { ApiError, getProblemMessage } from "@/api/client";
+import {
+  deleteTask,
+  fetchTasksForStats,
+  fetchTasksList,
+  patchTaskStatus,
+  type TaskListParams,
+} from "@/api/tasksApi";
+import { fetchMembers } from "@/api/membersApi";
 import { ControlsRow } from "@/components/layout/ControlsRow";
 import { Header } from "@/components/layout/Header";
 import { StatsRow } from "@/components/layout/StatsRow";
 import { ConfirmDeleteDialog } from "@/components/modals/ConfirmDeleteDialog";
 import { CreateMemberModal } from "@/components/modals/CreateMemberModal";
+import { ManageMembersModal } from "@/components/modals/ManageMembersModal";
 import { CreateTaskModal } from "@/components/modals/CreateTaskModal";
 import { EditTaskModal } from "@/components/modals/EditTaskModal";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import { TaskList } from "@/components/tasks/TaskList";
-import { filterTasks, sortTasks, taskStats } from "@/lib/taskFilters";
+import { taskStats } from "@/lib/taskFilters";
 import type { SortDirection, TaskItemStatus, TaskPriority, TaskSortField } from "@/types/task";
 
 export function DashboardPage() {
-  const [simulateTaskError, setSimulateTaskError] = useState(false);
-
-  const tasksQuery = useQuery({
-    queryKey: ["tasks", "mock", simulateTaskError],
-    queryFn: () => fetchMockTasks({ simulateError: simulateTaskError, delayMs: 650 }),
-  });
-
-  const membersQuery = useQuery({
-    queryKey: ["members", "mock"],
-    queryFn: () => fetchMockMembers(350),
-  });
-
-  const allTasks = tasksQuery.data ?? [];
-  const members = membersQuery.data ?? [];
+  const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<TaskItemStatus | "all">("all");
@@ -39,10 +35,37 @@ export function DashboardPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const visibleTasks = useMemo(() => {
-    const f = filterTasks(allTasks, search, status, priority, assignee);
-    return sortTasks(f, sortBy, sortDir);
-  }, [allTasks, search, status, priority, assignee, sortBy, sortDir]);
+  const listParams: TaskListParams = useMemo(() => {
+    const p: TaskListParams = {
+      sortBy,
+      sortDir,
+    };
+    if (status !== "all") p.status = status;
+    if (priority !== "all") p.priority = priority;
+    if (assignee !== "all" && assignee !== "unassigned") p.assigneeMemberId = assignee;
+    if (search.trim()) p.search = search;
+    return p;
+  }, [search, status, priority, assignee, sortBy, sortDir]);
+
+  const tasksListQuery = useQuery({
+    queryKey: ["tasks", "list", listParams, assignee === "unassigned"] as const,
+    queryFn: () =>
+      fetchTasksList(listParams, { unassignedOnly: assignee === "unassigned" }),
+  });
+
+  const tasksStatsQuery = useQuery({
+    queryKey: ["tasks", "stats"],
+    queryFn: fetchTasksForStats,
+  });
+
+  const membersQuery = useQuery({
+    queryKey: ["members"],
+    queryFn: fetchMembers,
+  });
+
+  const visibleTasks = tasksListQuery.data ?? [];
+  const members = membersQuery.data ?? [];
+  const stats = useMemo(() => taskStats(tasksStatsQuery.data ?? []), [tasksStatsQuery.data]);
 
   useEffect(() => {
     if (visibleTasks.length === 0) {
@@ -55,38 +78,67 @@ export function DashboardPage() {
     });
   }, [visibleTasks]);
 
-  const stats = useMemo(() => taskStats(allTasks), [allTasks]);
-  const selectedTask = selectedId ? allTasks.find((t) => t.id === selectedId) ?? null : null;
+  const selectedTask = selectedId ? visibleTasks.find((t) => t.id === selectedId) ?? null : null;
 
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [createMemberOpen, setCreateMemberOpen] = useState(false);
+  const [manageMembersOpen, setManageMembersOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  const patchStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: TaskItemStatus }) =>
+      patchTaskStatus(id, status),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      toast.success(
+        variables.status === "completed" ? "Marked complete" : "Task reopened",
+      );
+    },
+    onError: (err: unknown) => {
+      const msg =
+        err instanceof ApiError ? getProblemMessage(err.body) : "Could not update status";
+      toast.error(msg);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      toast.success("Task deleted");
+      setDeleteOpen(false);
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof ApiError ? getProblemMessage(err.body) : "Could not delete task";
+      toast.error(msg);
+    },
+  });
 
   const handleMarkComplete = () => {
     if (!selectedTask) return;
-    toast.success("Marked complete", {
-      description: "Demo only — wire PATCH /api/tasks/{id}/status when ready.",
-    });
+    patchStatusMutation.mutate({ id: selectedTask.id, status: "completed" });
   };
 
   const handleReopen = () => {
     if (!selectedTask) return;
-    toast.success("Task reopened", {
-      description: "Demo only — wire PATCH /api/tasks/{id}/status when ready.",
-    });
+    patchStatusMutation.mutate({ id: selectedTask.id, status: "todo" });
   };
 
-  const handleConfirmDelete = async () => {
-    setDeleteBusy(true);
-    await new Promise((r) => setTimeout(r, 500));
-    toast.success("Task deleted", {
-      description: "Demo only — no data was removed.",
-    });
-    setDeleteBusy(false);
-    setDeleteOpen(false);
+  const handleConfirmDelete = () => {
+    if (!selectedTask) return;
+    deleteMutation.mutate(selectedTask.id);
   };
+
+  const listLoading = tasksListQuery.isPending;
+  const listError = tasksListQuery.isError;
+  const errorMessage = (() => {
+    const e = tasksListQuery.error;
+    if (!e) return undefined;
+    if (e instanceof ApiError) return getProblemMessage(e.body);
+    if (e instanceof Error) return e.message;
+    return undefined;
+  })();
 
   return (
     <div className="min-h-screen">
@@ -98,6 +150,7 @@ export function DashboardPage() {
           inProgress={stats.inProgress}
           overdue={stats.overdue}
           completed={stats.completed}
+          canceled={stats.canceled}
         />
 
         <ControlsRow
@@ -115,6 +168,7 @@ export function DashboardPage() {
           onSortDirChange={setSortDir}
           members={members}
           onNewMember={() => setCreateMemberOpen(true)}
+          onManageMembers={() => setManageMembersOpen(true)}
         />
 
         <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
@@ -126,10 +180,10 @@ export function DashboardPage() {
               tasks={visibleTasks}
               selectedId={selectedId}
               onSelect={setSelectedId}
-              isLoading={tasksQuery.isLoading}
-              isError={tasksQuery.isError}
-              errorMessage={tasksQuery.error instanceof Error ? tasksQuery.error.message : undefined}
-              onRetry={() => tasksQuery.refetch()}
+              isLoading={listLoading}
+              isError={listError}
+              errorMessage={errorMessage}
+              onRetry={() => tasksListQuery.refetch()}
             />
           </section>
           <section className="lg:col-span-7" aria-label="Task details">
@@ -142,6 +196,7 @@ export function DashboardPage() {
               onDelete={() => setDeleteOpen(true)}
               onMarkComplete={handleMarkComplete}
               onReopen={handleReopen}
+              statusActionBusy={patchStatusMutation.isPending}
             />
           </section>
         </div>
@@ -153,6 +208,14 @@ export function DashboardPage() {
         members={members}
       />
       <CreateMemberModal open={createMemberOpen} onClose={() => setCreateMemberOpen(false)} />
+      <ManageMembersModal
+        open={manageMembersOpen}
+        onClose={() => setManageMembersOpen(false)}
+        members={members}
+        onMemberDeleted={(id) => {
+          if (assignee === id) setAssignee("all");
+        }}
+      />
       <EditTaskModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
@@ -162,28 +225,13 @@ export function DashboardPage() {
       <ConfirmDeleteDialog
         open={deleteOpen}
         onClose={() => {
-          if (!deleteBusy) setDeleteOpen(false);
+          if (!deleteMutation.isPending) setDeleteOpen(false);
         }}
         onConfirm={handleConfirmDelete}
         title="Delete this task?"
-        body="This action cannot be undone. In this demo, nothing is deleted until the API is connected."
-        busy={deleteBusy}
+        body="This will permanently remove the task. This action cannot be undone."
+        busy={deleteMutation.isPending}
       />
-
-      {import.meta.env.DEV ? (
-        <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
-          <button
-            type="button"
-            className="rounded-full border border-slate-200 bg-white/95 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-lg backdrop-blur"
-            onClick={() => setSimulateTaskError((v) => !v)}
-          >
-            {simulateTaskError ? "Task load: error preview on" : "Task load: error preview off"}
-          </button>
-          <span className="max-w-[14rem] text-right text-[10px] text-slate-500">
-            Toggle to preview the task list error state. Off by default.
-          </span>
-        </div>
-      ) : null}
     </div>
   );
 }

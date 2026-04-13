@@ -32,7 +32,12 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Title).HasMaxLength(500).IsRequired();
             e.Property(x => x.Description).HasMaxLength(4000);
-            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
+            e.Property(x => x.Status)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => MapTaskStatusFromDatabase(v))
+                .HasMaxLength(32)
+                .IsRequired();
             e.Property(x => x.Priority).HasConversion<string>().HasMaxLength(32).IsRequired();
             e.HasOne(x => x.Assignee)
                 .WithMany(x => x.AssignedTasks)
@@ -42,4 +47,15 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             e.HasIndex(x => x.DueDateUtc);
         });
     }
+
+    /// <summary>Maps stored strings; accepts legacy <c>Cancelled</c> rows from before the enum was renamed to <see cref="TaskItemStatus.Canceled"/>.</summary>
+    private static TaskItemStatus MapTaskStatusFromDatabase(string s) => s switch
+    {
+        nameof(TaskItemStatus.Todo) => TaskItemStatus.Todo,
+        nameof(TaskItemStatus.InProgress) => TaskItemStatus.InProgress,
+        nameof(TaskItemStatus.Completed) => TaskItemStatus.Completed,
+        nameof(TaskItemStatus.Canceled) => TaskItemStatus.Canceled,
+        "Cancelled" => TaskItemStatus.Canceled,
+        _ => throw new InvalidOperationException($"Unknown task status in database: {s}"),
+    };
 }

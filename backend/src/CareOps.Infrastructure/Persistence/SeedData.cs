@@ -66,6 +66,18 @@ public static class SeedData
                 DueDateUtc = now.AddDays(-3),
                 CreatedAtUtc = now,
                 UpdatedAtUtc = now,
+            },
+            new TaskItem
+            {
+                Id = Guid.NewGuid(),
+                Title = "Retire legacy badge printer request form",
+                Description = "Superseded by intake v2.",
+                Status = TaskItemStatus.Canceled,
+                Priority = TaskPriority.Low,
+                AssigneeMemberId = null,
+                DueDateUtc = now.AddDays(14),
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now,
             });
 
         await db.SaveChangesAsync(cancellationToken);
