@@ -26,6 +26,45 @@ npm run dev
 
 Open **http://localhost:5173**.
 
+## Tests
+
+### Unit / component (Vitest)
+
+```bash
+cd frontend
+npm install
+npm run test
+```
+
+Use `npm run test:watch` while developing.
+
+### End-to-end (Playwright)
+
+E2E tests drive a real browser against the **Vite dev server** and the **ASP.NET Core API** on port **5000**. The Playwright config starts both via `scripts/start-e2e-stack.sh` (requires the **.NET SDK** on your PATH, same as the backend).
+
+Install the Chromium binary once (after `npm install`):
+
+```bash
+cd frontend
+npx playwright install chromium
+```
+
+Run E2E only:
+
+```bash
+npm run test:e2e
+```
+
+Run **Vitest + Playwright** in one command:
+
+```bash
+npm run test:all
+```
+
+Use `npm run test:e2e:ui` for the Playwright UI mode. Set `CI=1` when you want a strict run without reusing an already-running dev server.
+
+**Note:** E2E uses the API’s SQLite file under `backend/` (`careops.db`). Seeded titles like “Follow up with linen vendor…” are assumed on a **fresh or seeded** database; if your DB was created before seed data existed, delete `backend/careops.db` and restart the API once so `EnsureSeededAsync` can populate data.
+
 ## Build
 
 ```bash
