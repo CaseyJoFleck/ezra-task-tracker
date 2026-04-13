@@ -17,7 +17,7 @@ flowchart LR
   API -->|EF Core| DB
 ```
 
-In **development**, a common pattern is Vite dev server with **proxy** to the API (`/api` → backend) to avoid CORS friction. In **Docker**, either serve the built SPA behind the same host as the API (reverse proxy) or configure CORS for the known frontend origin—see [CORS approach](#cors-approach).
+In **development**, a common pattern is Vite dev server with **proxy** to the API (`/api` → backend) to avoid CORS friction. In **Docker**, either serve the built SPA behind the same host as the API (reverse proxy) or configure CORS for the known frontend origin—see [CORS approach](#cors-approach). In this repository, Docker Compose is also a supported local review path (not deployment-only), while manual backend/frontend startup remains available for day-to-day development.
 
 ---
 
@@ -253,6 +253,8 @@ Use **Problem Details** (`application/problem+json`) for failures; include stabl
 
 **Logging:** Structured JSON-friendly logs (level, message, exception, request id). No PII beyond internal names/emails already in scope.
 
+**Frontend observability (future):** for production use, add client-side error monitoring and core web vitals tracking (LCP/INP/CLS). This is intentionally documented rather than fully implemented in the take-home.
+
 ---
 
 ## Security considerations (unauthenticated MVP)
@@ -303,10 +305,15 @@ Deeper rationale: [adr-001-key-decisions.md](./adr-001-key-decisions.md).
 
 ## Local setup (current repo)
 
+**Docker Compose local review (recommended):**
 1. Copy **`.env.example`** to **`.env`** (optional; defaults work for ports `5000` / `3000`). The example file contains no secrets.
 2. From the repo root: **`docker compose build`** then **`docker compose up`**.
 3. **Web:** **http://localhost:3000** — built SPA (nginx).
 4. **API:** **http://localhost:5000** (mapped port) — Swagger at `/swagger` in Development, REST under `/api`.
+
+**Manual local development (no Docker):**
+- Backend: run API from `backend/` with `dotnet run --project src/CareOps.Api/CareOps.Api.csproj`.
+- Frontend: run Vite from `frontend/` with `npm run dev` (proxying `/api` to backend).
 
 See root **`docker-compose.yml`**, **`backend/Dockerfile`**, **`frontend/Dockerfile`**, **`frontend/nginx.conf`**, and **`.env.example`**.
 

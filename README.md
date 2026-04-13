@@ -16,6 +16,8 @@ docker compose build
 docker compose up
 ```
 
+This Docker Compose path is the primary local review workflow (not deployment-only).
+
 Open:
 
 - Web app: **http://localhost:3000**
@@ -61,6 +63,8 @@ Open:
 ---
 
 ## Local development
+
+Use this section for manual local development without Docker Compose.
 
 **Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), **Node.js 20+**, optional **Docker**.
 
@@ -185,6 +189,7 @@ Base path **`/api`**. JSON enums are **camelCase**.
 - **SQLite** file: default local path is `careops.db` under the API working directory; Docker Compose stores the DB in a **named volume** (`sqlite_data` → `/data/careops.db` in the API container).
 - **Logs:** ASP.NET Core logging is configured in `appsettings`; request-level **HTTP logging** (method, path, status, duration) is enabled in `Program.cs` for operational visibility. In production you would typically ship logs to a collector and use **JSON** or another structured format at the host.
 - **Health:** use **`GET /health`** for load balancers or compose healthchecks (includes a **database** check).
+- **Frontend observability (future):** monitor client-side errors and core web vitals (LCP/INP/CLS) in production; this is intentionally documented rather than implemented in the take-home.
 
 **Beyond this MVP:** a fuller deployment would monitor **golden signals** (latency, traffic, errors, saturation) and add **application metrics** such as task creation rate, overdue task count, mutation success rate, and rate-limited request counts—none of which are wired here to keep scope small.
 

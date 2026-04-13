@@ -24,6 +24,10 @@ type Props = {
 
 const selectClass =
   "block w-full min-w-0 max-w-full truncate rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-800 shadow-sm outline-none ring-slate-300 focus:ring-2";
+const labelClass = "mb-1 block text-xs font-medium text-slate-600";
+const fieldWrapperClass = "min-w-0";
+const searchInputClass =
+  "w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-800 shadow-sm outline-none ring-slate-300 placeholder:text-slate-400 focus:ring-2";
 
 export function ControlsRow({
   search,
@@ -44,28 +48,28 @@ export function ControlsRow({
 }: Props) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-card lg:flex-row lg:items-end lg:gap-4">
-      <div className="relative w-full shrink-0 lg:max-w-[13rem] xl:max-w-[15rem]">
-        <label htmlFor="task-search" className="sr-only">
+      <div className="w-full shrink-0 lg:max-w-[13rem] xl:max-w-[15rem]">
+        <label htmlFor="task-search" className={labelClass}>
           Search tasks
         </label>
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-          aria-hidden
-        />
-        <input
-          id="task-search"
-          type="search"
-          placeholder="Search by title…"
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className={cn(
-            "w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-800 shadow-sm outline-none ring-slate-300 placeholder:text-slate-400 focus:ring-2",
-          )}
-        />
+        <div className="relative">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            aria-hidden
+          />
+          <input
+            id="task-search"
+            type="search"
+            placeholder="Search by title…"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className={cn(searchInputClass)}
+          />
+        </div>
       </div>
       <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-x-3 lg:gap-y-2">
-        <div className="min-w-0">
-          <label htmlFor="filter-status" className="mb-1 block text-xs font-medium text-slate-600">
+        <div className={fieldWrapperClass}>
+          <label htmlFor="filter-status" className={labelClass}>
             Status
           </label>
           <select
@@ -81,8 +85,8 @@ export function ControlsRow({
             <option value="canceled">Canceled</option>
           </select>
         </div>
-        <div className="min-w-0">
-          <label htmlFor="filter-priority" className="mb-1 block text-xs font-medium text-slate-600">
+        <div className={fieldWrapperClass}>
+          <label htmlFor="filter-priority" className={labelClass}>
             Priority
           </label>
           <select
@@ -97,8 +101,8 @@ export function ControlsRow({
             <option value="high">High</option>
           </select>
         </div>
-        <div className="min-w-0">
-          <label htmlFor="filter-assignee" className="mb-1 block text-xs font-medium text-slate-600">
+        <div className={fieldWrapperClass}>
+          <label htmlFor="filter-assignee" className={labelClass}>
             Assignee
           </label>
           <select
@@ -118,8 +122,8 @@ export function ControlsRow({
             ))}
           </select>
         </div>
-        <div className="min-w-0">
-          <label htmlFor="sort" className="mb-1 block text-xs font-medium text-slate-600">
+        <div className={fieldWrapperClass}>
+          <label htmlFor="sort" className={labelClass}>
             Sort
           </label>
           <div className="flex gap-2">
