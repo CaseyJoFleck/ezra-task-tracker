@@ -64,9 +64,26 @@ Open:
 
 ## Local development
 
-Use this section for manual local development without Docker Compose.
+Start with the Docker Compose review path below, then use manual setup for day-to-day local development.
 
 **Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), **Node.js 20+**, optional **Docker**.
+
+### Docker review path (recommended)
+
+From the repository root:
+
+```bash
+cp .env.example .env   # optional: adjust ports
+docker compose build
+docker compose up
+```
+
+- Web app: **http://localhost:3000**
+- API base: **http://localhost:5000**
+- Swagger (Development): **http://localhost:5000/swagger**
+- Health: **http://localhost:5000/health**
+
+### Manual local development
 
 ### Backend API (local)
 
