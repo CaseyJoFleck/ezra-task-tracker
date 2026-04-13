@@ -14,7 +14,7 @@ I kept the assignment centered on a **task management** application, but I chose
 
 My dad died from cancer when I was 20. He was nearly recovered when it metastasized. If it had been caught before it spread, the outcome might have been different.
 
-Ezra is building the thing that might have changed that. Full-body MRI screening powered by AI, designed to catch what traditional care misses before it spreads. That is not an abstract mission to me.
+That is part of why Ezra’s mission resonates so strongly with me. Building earlier-detection tools through full-body MRI screening and AI-supported analysis is not abstract to me.
 
 This project is my take on a small, honest slice of care-adjacent operational tooling. Not clinical software, but built with the belief that better coordination and follow-through across the care journey is worth getting right.
 
