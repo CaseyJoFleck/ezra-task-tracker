@@ -41,16 +41,20 @@ Small ops teams often rely on ad-hoc spreadsheets, chat threads, and personal re
 
 ## User-facing feature checklist
 
-- [ ] Task list with loading / empty / error states
-- [ ] Create / edit task (modal or panel)
-- [ ] Delete task with confirmation
-- [ ] Complete / reopen actions
-- [ ] Member list + create member
-- [ ] Filters: status, priority, assignee
-- [ ] Search: title substring
-- [ ] Sort: created, due, priority (direction configurable)
-- [ ] Overdue styling when `DueDateUtc < now` and status is not terminal
-- [ ] Success toasts; destructive confirm for delete
+Frontend foundation (mock data): the dashboard implements the interactions below in the browser; **persistence and API integration** are tracked separately in [implementation-plan.md](./implementation-plan.md).
+
+- [x] Task list with loading / empty / error states *(mock-backed + dev error toggle)*
+- [x] Create / edit task (modals)
+- [x] Delete task with confirmation *(demo — no server delete yet)*
+- [x] Complete / reopen actions *(demo toasts — no PATCH yet)*
+- [x] Member list + create member modal *(new members do not list until API wired)*
+- [x] Filters: status, priority, assignee
+- [x] Search: title substring
+- [x] Sort: created, due, priority (direction configurable)
+- [x] Overdue styling when due in the past and status is not completed
+- [x] Success toasts; destructive confirm for delete
+
+**Still to do for “done-done”:** HTTP client, cache invalidation after mutations, and checkbox verification against the live API in Docker.
 
 ## Success criteria (MVP)
 

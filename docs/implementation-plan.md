@@ -114,29 +114,29 @@ Naming adjustments (e.g. `CareOps` vs `Ezra`) can be made when the solution is c
 
 ---
 
-### Phase 5 — Frontend scaffold
+### Phase 5 — Frontend scaffold *(largely complete)*
 
 | Step | Task |
 |------|------|
 | 5.1 | Vite + React + TS + Tailwind + TanStack Query + RHF + Zod |
-| 5.2 | API client module (base URL from env); error parsing for Problem Details |
-| 5.3 | App shell: header, toolbar placeholder, layout regions per [architecture.md](./architecture.md) |
+| 5.2 | **Pending:** API client module (base URL from env); parse Problem Details from failed responses |
+| 5.3 | App shell: header, stats, controls, two-column layout, modals — per [architecture.md](./architecture.md) dashboard section |
 
-**Exit:** App loads and calls `/health` or `/api/members`.
+**Exit achieved (UI shell):** App runs at `http://localhost:5173` with mock-backed queries and full layout. **Not done:** real HTTP calls to `/api/*`.
 
 ---
 
-### Phase 6 — Frontend features (MVP UI)
+### Phase 6 — Frontend features (MVP UI) *(partial — mocks)*
 
 | Step | Task |
 |------|------|
-| 6.1 | Task table with loading/empty/error states |
-| 6.2 | Filters, search, sort wired to query params |
-| 6.3 | Create/edit task modals; delete confirm; toasts |
-| 6.4 | Member panel + create member; assignment dropdown |
-| 6.5 | Overdue indication (badge or row style) |
+| 6.1 | Task list with loading/empty/error states — **done** (mocks + skeletons) |
+| 6.2 | Filters, search, sort — **done** client-side on mock data |
+| 6.3 | Create/edit task modals; delete confirm; toasts — **done** (demo toasts; no persistence) |
+| 6.4 | Create member + assignee dropdown — **UI done**; new members do not appear until API wiring |
+| 6.5 | Overdue indication — **done** in list + detail |
 
-**Exit:** All product-brief checklist items satisfied in UI.
+**Exit:** Product-brief checklist satisfied **in the UI** with mock data; **end-to-end against the API** remains for a follow-up phase (“Phase 6b — API integration”).
 
 ---
 
@@ -184,4 +184,8 @@ flowchart TD
   P3 --> P5 --> P6 --> P7
 ```
 
-**Next phase to implement:** **Phase 0** (solution structure + Docker skeleton).
+**Status (high level):** Phases **0–4** (backend, tests) and **frontend foundation** (Vite dashboard UI with mocks) are in the repo. **Remaining:** wire the SPA to real `/api/*` HTTP calls (replace mocks), align any query-param naming with the live API, then final Docker/CORS verification if serving from split origins.
+
+---
+
+**Original “next phase” note:** Phase 0 was the starting point; backend and tests have since landed—see root **README** and **docs/architecture.md** for current behavior.

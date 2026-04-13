@@ -287,17 +287,32 @@ Deeper rationale: [adr-001-key-decisions.md](./adr-001-key-decisions.md).
 
 ---
 
-## Local setup (skeleton — current repo)
+## Frontend (current state)
 
-1. Copy **`.env.example`** to **`.env`** (optional; defaults work for ports `5000` / `3000`).
+| Topic | Detail |
+|--------|--------|
+| **Stack** | React (Vite), TypeScript, Tailwind CSS, TanStack Query, React Hook Form + Zod, Sonner toasts |
+| **Shape** | Single-page dashboard: header, stats, search/filters/sort, two-column task list + detail panel, modals (create/edit task, create member, delete confirm) |
+| **Data today** | **In-memory mocks** (`frontend/src/data/mockData.ts`, loaded via `frontend/src/api/mockQueries.ts`). Simulated latency exercises loading/skeleton states; a dev-only toggle can force a task-list error state. |
+| **Mutations** | Forms validate with Zod; successful submits show toasts but **do not** persist or refresh lists until real `fetch` calls and TanStack Query `invalidateQueries` (or cache updates) are implemented. |
+| **Dev proxy** | `npm run dev` proxies `/api` and `/health` to `http://localhost:5000` so the SPA can call the backend same-origin during integration. |
+| **Production image** | Multi-stage Dockerfile: `npm ci`, `npm run build`, nginx serves `dist/` with SPA fallback (`frontend/nginx.conf`). |
+
+**Next integration step:** Replace mock query functions with HTTP clients targeting `/api/members` and `/api/tasks`, map JSON (camelCase enums) to existing TypeScript types, and invalidate or update queries after POST/PUT/PATCH/DELETE.
+
+---
+
+## Local setup (current repo)
+
+1. Copy **`.env.example`** to **`.env`** (optional; defaults work for ports `5000` / `3000`). The example file contains no secrets.
 2. From the repo root: **`docker compose build`** then **`docker compose up`**.
-3. **Web:** open `http://localhost:3000` — placeholder static page until the Vite app exists.
-4. **API:** container runs a **placeholder** entrypoint (no HTTP API yet). When implemented, expect `http://localhost:5000` (or mapped port) for Swagger and `/api`.
+3. **Web:** **http://localhost:3000** — built SPA (nginx).
+4. **API:** **http://localhost:5000** (mapped port) — Swagger at `/swagger` in Development, REST under `/api`.
 
-See root **`docker-compose.yml`**, **`backend/Dockerfile`**, **`frontend/Dockerfile`**, and **`.env.example`**.
+See root **`docker-compose.yml`**, **`backend/Dockerfile`**, **`frontend/Dockerfile`**, **`frontend/nginx.conf`**, and **`.env.example`**.
 
-## Docker (target end state)
+## Docker (compose services)
 
-- **API container:** published ASP.NET Core DLL, SQLite on a **named volume** (`/data`), `/health` for readiness.
-- **Frontend container:** `nginx` serving Vite **`dist/`** (replace placeholder Dockerfile).
-- **Compose:** Services, env, port mapping — phased detail in [implementation-plan.md](./implementation-plan.md).
+- **API container:** ASP.NET Core, SQLite on a **named volume** (`/data`), `/health` for readiness.
+- **Frontend container:** nginx serving Vite **`dist/`** (multi-stage build).
+- **Compose:** Services, env, port mapping — phased history in [implementation-plan.md](./implementation-plan.md).

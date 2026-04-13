@@ -7,3 +7,12 @@
 **/*.db
 **/*.db-shm
 **/*.db-wal
+
+# Node / frontend
+node_modules/
+**/dist/
+frontend/dist/
+
+# Local env (never commit secrets; .env.example stays tracked)
+.env
+.env.local

@@ -2,7 +2,9 @@
 
 Production-minded **internal** MVP for a small **care operations** team: tasks and members, filters, search, overdue visibility—**healthcare-adjacent, not clinical**. No patient data, no PHI, no clinical workflows.
 
-**Backend:** ASP.NET Core **10** Web API, EF Core + SQLite, layered architecture, FluentValidation, health checks, rate limiting, Swagger, and automated tests. **Frontend:** still a static Docker placeholder; a React + TypeScript + Vite app is planned.
+**Backend:** ASP.NET Core **10** Web API, EF Core + SQLite, layered architecture, FluentValidation, health checks, rate limiting, Swagger, and automated tests.
+
+**Frontend:** React + TypeScript + **Vite** single-page dashboard (**Tailwind CSS**, **TanStack Query**, **React Hook Form** + **Zod**, **Sonner** toasts). The UI is fully scaffolded (layout, filters, modals, loading/empty/error states). **Task and member lists are still driven by in-memory mocks** in the browser—create/update actions show toasts but do **not** call the API yet, so new members or tasks will not appear in dropdowns until HTTP integration is added. See [frontend/README.md](frontend/README.md) and [docs/architecture.md](docs/architecture.md#frontend-current-state).
 
 ## Repository layout
 
@@ -24,8 +26,10 @@ ezra-task-tracker/
 │   │   └── CareOps.Infrastructure/ # EF Core, SQLite, seed
 │   └── tests/                     # CareOps.Api.Tests (integration), CareOps.Application.Tests (unit)
 ├── frontend/
-│   ├── Dockerfile               # placeholder static page until Vite app exists
-│   └── ...
+│   ├── Dockerfile                 # multi-stage: npm ci + vite build + nginx
+│   ├── nginx.conf
+│   ├── package.json
+│   └── src/                       # dashboard (components, types, mock API)
 └── docs/
     └── ...
 ```
@@ -35,13 +39,14 @@ ezra-task-tracker/
 | Doc | Contents |
 |-----|----------|
 | [docs/product-brief.md](docs/product-brief.md) | Concept, scope, assumptions, tradeoffs, future work |
-| [docs/architecture.md](docs/architecture.md) | Diagrams, entities, API routes, CORS, rate limits, security, scaling, **local Docker steps** |
+| [docs/architecture.md](docs/architecture.md) | Backend + **frontend** overview, entities, API routes, Docker, CORS |
 | [docs/adr-001-key-decisions.md](docs/adr-001-key-decisions.md) | Stack and layering decisions |
-| [docs/implementation-plan.md](docs/implementation-plan.md) | Phased delivery notes |
+| [docs/implementation-plan.md](docs/implementation-plan.md) | Phased delivery; **frontend foundation** status |
 
 ## Prerequisites
 
 - **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)** (solution targets `net10.0` via `backend/Directory.Build.props`).
+- **Node.js 20+** for local frontend dev (`npm` in `frontend/`).
 - For Docker: [Docker](https://docs.docker.com/get-docker/) with Compose v2.
 
 ## Local setup
@@ -67,9 +72,22 @@ dotnet test CareOps.sln
 
 See [backend/tests/README.md](backend/tests/README.md) for project breakdown and useful options.
 
-### Docker (API + placeholder web UI)
+### Frontend (dashboard UI)
 
-1. Optional: `cp .env.example .env` and adjust ports.
+From `frontend/`:
+
+```bash
+npm install
+npm run dev
+```
+
+Open **http://localhost:5173**. With the API running locally, Vite **proxies** `/api` and `/health` to port **5000** (see `frontend/vite.config.ts`).
+
+More detail: [frontend/README.md](frontend/README.md).
+
+### Docker (API + web UI)
+
+1. Optional: `cp .env.example .env` and adjust ports (example file contains **no secrets**—only ports and public dev URLs).
 2. From the repo root:
 
    ```bash
@@ -78,9 +96,13 @@ See [backend/tests/README.md](backend/tests/README.md) for project breakdown and
    ```
 
 3. **API:** **http://localhost:5000/swagger** when `ASPNETCORE_ENVIRONMENT=Development` (default in Compose).
-4. **Web:** **http://localhost:3000** — static placeholder until the React app is added.
+4. **Web:** **http://localhost:3000** — production build of the SPA served by nginx inside the `web` service.
 
 SQLite in Docker uses the `sqlite_data` volume at `/data/careops.db` inside the API container.
+
+## Security note for contributors
+
+Do **not** commit real API keys, connection strings with passwords, or personal `.env` files. Use `.env.example` as a template; keep secrets in local-only files that are listed in `.gitignore`.
 
 ## Out of scope (by design)
 
