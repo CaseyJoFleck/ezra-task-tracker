@@ -1,10 +1,10 @@
 # CareOps backend
 
-ASP.NET Core **10** Web API: **Api** → **Application** → **Domain** ← **Infrastructure** (EF Core + SQLite). All projects target **`net10.0`** (see `Directory.Build.props`).
+ASP.NET Core **8 (LTS)** Web API: **Api** → **Application** → **Domain** ← **Infrastructure** (EF Core + SQLite). All projects target **`net8.0`** (see `Directory.Build.props`).
 
 ## Prerequisites
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 ## Run locally
 
@@ -36,7 +36,7 @@ docker compose build api
 docker compose up api
 ```
 
-The image uses **.NET 10** (`sdk:10.0` / `aspnet:10.0-alpine`). SQLite uses **`Data Source=/data/careops.db`** with a named volume. Swagger is enabled when `ASPNETCORE_ENVIRONMENT=Development` (default in Compose).
+The image uses **.NET 8** (`sdk:8.0` / `aspnet:8.0-alpine`). SQLite uses **`Data Source=/data/careops.db`** with a named volume. Swagger is enabled when `ASPNETCORE_ENVIRONMENT=Development` (default in Compose).
 
 ## API surface (summary)
 
@@ -56,4 +56,4 @@ Enums in JSON are **camelCase strings** (e.g. `todo`, `completed`, `high`).
 
 ## Database
 
-Development uses **`EnsureCreated`** plus seed data when the database is empty. For production-grade migrations, add EF migrations in a follow-up and replace `EnsureCreated` with `Migrate()`.
+I used **`EnsureCreated`** plus seed data to keep local setup friction low for this take-home and optimize reviewer experience. If this project continued beyond the submission, I would switch to a standard EF Core migrations workflow so schema evolution is explicit and versioned.

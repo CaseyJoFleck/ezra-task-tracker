@@ -118,16 +118,16 @@ public class TasksApiIntegrationTests : IClassFixture<CareOpsApiFactory>
     }
 
     [Fact]
-    public async Task List_tasks_search_finds_vendor_in_title()
+    public async Task List_tasks_search_finds_imaging_in_title()
     {
         await _factory.ResetDatabaseAsync();
         var client = _factory.CreateClient();
 
-        var res = await client.GetAsync("/api/tasks?search=vendor");
+        var res = await client.GetAsync("/api/tasks?search=imaging");
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var list = await res.Content.ReadFromJsonAsync<List<TaskItemResponse>>(ApiTestJson.Options);
         list.Should().NotBeNull();
-        list!.Should().Contain(t => t.Title.Contains("vendor", StringComparison.OrdinalIgnoreCase));
+        list!.Should().Contain(t => t.Title.Contains("imaging", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

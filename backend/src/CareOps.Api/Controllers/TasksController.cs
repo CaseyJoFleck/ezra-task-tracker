@@ -42,7 +42,9 @@ public sealed class TasksController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid)
+        {
             return ValidationProblem(ModelState);
+        }
 
         var query = new TaskListQuery
         {
@@ -54,8 +56,8 @@ public sealed class TasksController : ControllerBase
             SortDir = sortDir,
             OverdueOnly = overdueOnly,
         };
-        var list = await _tasks.ListAsync(query, cancellationToken);
-        return Ok(list);
+        var tasks = await _tasks.ListAsync(query, cancellationToken);
+        return Ok(tasks);
     }
 
     /// <summary>Get a single task.</summary>
@@ -73,13 +75,14 @@ public sealed class TasksController : ControllerBase
     [EnableRateLimiting("mutating")]
     [ProducesResponseType(typeof(TaskItemResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<TaskItemResponse>> Create([FromBody] CreateTaskRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<TaskItemResponse>> Create(
+        [FromBody] CreateTaskRequest request,
+        CancellationToken cancellationToken)
     {
-        var vr = await _createValidator.ValidateAsync(request, cancellationToken);
-        if (!vr.IsValid)
+        var validationResult = await _createValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
         {
-            foreach (var e in vr.Errors)
-                ModelState.AddModelError(e.PropertyName, e.ErrorMessage);
+            AddValidationErrors(validationResult);
             return ValidationProblem(ModelState);
         }
 
@@ -93,13 +96,15 @@ public sealed class TasksController : ControllerBase
     [ProducesResponseType(typeof(TaskItemResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TaskItemResponse>> Update(Guid id, [FromBody] UpdateTaskRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<TaskItemResponse>> Update(
+        Guid id,
+        [FromBody] UpdateTaskRequest request,
+        CancellationToken cancellationToken)
     {
-        var vr = await _updateValidator.ValidateAsync(request, cancellationToken);
-        if (!vr.IsValid)
+        var validationResult = await _updateValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
         {
-            foreach (var e in vr.Errors)
-                ModelState.AddModelError(e.PropertyName, e.ErrorMessage);
+            AddValidationErrors(validationResult);
             return ValidationProblem(ModelState);
         }
 
@@ -113,13 +118,15 @@ public sealed class TasksController : ControllerBase
     [ProducesResponseType(typeof(TaskItemResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TaskItemResponse>> PatchStatus(Guid id, [FromBody] UpdateTaskStatusRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<TaskItemResponse>> PatchStatus(
+        Guid id,
+        [FromBody] UpdateTaskStatusRequest request,
+        CancellationToken cancellationToken)
     {
-        var vr = await _patchStatusValidator.ValidateAsync(request, cancellationToken);
-        if (!vr.IsValid)
+        var validationResult = await _patchStatusValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
         {
-            foreach (var e in vr.Errors)
-                ModelState.AddModelError(e.PropertyName, e.ErrorMessage);
+            AddValidationErrors(validationResult);
             return ValidationProblem(ModelState);
         }
 
@@ -136,5 +143,13 @@ public sealed class TasksController : ControllerBase
     {
         await _tasks.DeleteAsync(id, cancellationToken);
         return NoContent();
+    }
+
+    private void AddValidationErrors(FluentValidation.Results.ValidationResult validationResult)
+    {
+        foreach (var error in validationResult.Errors)
+        {
+            ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+        }
     }
 }

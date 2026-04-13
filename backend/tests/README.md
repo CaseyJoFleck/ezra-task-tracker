@@ -1,6 +1,6 @@
 # Backend tests
 
-Requires the **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)** (same as the rest of the solution).
+Requires the **[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)** (same as the rest of the solution).
 
 ## Projects
 

@@ -7,11 +7,19 @@ namespace CareOps.Application.Tasks;
 
 public interface ITaskService
 {
-    Task<IReadOnlyList<TaskItemResponse>> ListAsync(TaskListQuery query, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<TaskItemResponse>> ListAsync(
+        TaskListQuery query,
+        CancellationToken cancellationToken = default);
     Task<TaskItemResponse> GetAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TaskItemResponse> CreateAsync(CreateTaskRequest request, CancellationToken cancellationToken = default);
-    Task<TaskItemResponse> UpdateAsync(Guid id, UpdateTaskRequest request, CancellationToken cancellationToken = default);
-    Task<TaskItemResponse> UpdateStatusAsync(Guid id, UpdateTaskStatusRequest request, CancellationToken cancellationToken = default);
+    Task<TaskItemResponse> UpdateAsync(
+        Guid id,
+        UpdateTaskRequest request,
+        CancellationToken cancellationToken = default);
+    Task<TaskItemResponse> UpdateStatusAsync(
+        Guid id,
+        UpdateTaskStatusRequest request,
+        CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
@@ -21,7 +29,9 @@ public sealed class TaskService : ITaskService
 
     public TaskService(IApplicationDbContext db) => _db = db;
 
-    public async Task<IReadOnlyList<TaskItemResponse>> ListAsync(TaskListQuery query, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<TaskItemResponse>> ListAsync(
+        TaskListQuery query,
+        CancellationToken cancellationToken = default)
     {
         var q = _db.TaskItems.AsNoTracking().Include(t => t.Assignee).AsQueryable();
 
@@ -59,7 +69,8 @@ public sealed class TaskService : ITaskService
 
     public async Task<TaskItemResponse> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var entity = await _db.TaskItems.AsNoTracking()
+        var entity = await _db.TaskItems
+            .AsNoTracking()
             .Include(t => t.Assignee)
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
         if (entity is null)
@@ -93,7 +104,10 @@ public sealed class TaskService : ITaskService
         return Map(entity);
     }
 
-    public async Task<TaskItemResponse> UpdateAsync(Guid id, UpdateTaskRequest request, CancellationToken cancellationToken = default)
+    public async Task<TaskItemResponse> UpdateAsync(
+        Guid id,
+        UpdateTaskRequest request,
+        CancellationToken cancellationToken = default)
     {
         var entity = await _db.TaskItems.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
         if (entity is null)
@@ -116,7 +130,10 @@ public sealed class TaskService : ITaskService
         return Map(entity);
     }
 
-    public async Task<TaskItemResponse> UpdateStatusAsync(Guid id, UpdateTaskStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<TaskItemResponse> UpdateStatusAsync(
+        Guid id,
+        UpdateTaskStatusRequest request,
+        CancellationToken cancellationToken = default)
     {
         var entity = await _db.TaskItems.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
         if (entity is null)

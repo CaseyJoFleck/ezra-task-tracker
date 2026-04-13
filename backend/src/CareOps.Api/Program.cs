@@ -1,16 +1,17 @@
 using System.Threading.RateLimiting;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CareOps.Api.Exceptions;
 using CareOps.Application;
 using CareOps.Infrastructure;
 using CareOps.Infrastructure.Persistence;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,8 +19,11 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddControllers()
-    .AddJsonOptions(o =>
-        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+    });
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.SuppressModelStateInvalidFilter = true;
@@ -89,12 +93,12 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-builder.Services.AddHttpLogging(o =>
+builder.Services.AddHttpLogging(options =>
 {
-    o.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.RequestMethod
-        | Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.RequestPath
-        | Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.ResponseStatusCode
-        | Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.Duration;
+    options.LoggingFields = HttpLoggingFields.RequestMethod
+        | HttpLoggingFields.RequestPath
+        | HttpLoggingFields.ResponseStatusCode
+        | HttpLoggingFields.Duration;
 });
 
 var app = builder.Build();
@@ -111,7 +115,10 @@ app.UseRouting();
 if (app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Care Operations Task API v1"));
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Care Operations Task API v1");
+    });
 }
 
 app.UseCors("LocalFrontend");

@@ -20,7 +20,7 @@ This work is personally meaningful. My dad died from cancer when I was 20—he w
 
 | Layer | Choices |
 |-------|---------|
-| **API** | ASP.NET Core **10** Web API (controllers), **EF Core**, **SQLite**, **FluentValidation**, **Swagger/OpenAPI**, structured errors, **health checks** (`/health`), **ASP.NET Core rate limiting** |
+| **API** | ASP.NET Core **8 (LTS)** Web API (controllers), **EF Core**, **SQLite**, **FluentValidation**, **Swagger/OpenAPI**, structured errors, **health checks** (`/health`), **ASP.NET Core rate limiting** |
 | **Frontend** | **React 19**, **TypeScript**, **Vite**, **Tailwind CSS**, **TanStack Query**, **React Hook Form** + **Zod**, **Sonner** toasts |
 | **Delivery** | **Docker Compose** (API + nginx-served SPA), Dockerfiles under `backend/` and `frontend/` |
 | **Tests** | **xUnit** + **FluentAssertions** (backend); **Vitest** + Testing Library (frontend); **Playwright** (E2E, Chromium) |
@@ -114,9 +114,11 @@ Base path **`/api`**. JSON enums are **camelCase**.
 
 ## Local development
 
-**Prerequisites:** [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), **Node.js 20+**, optional **Docker**.
+**Fastest review path: use Docker Compose.**
 
-### Backend API
+**Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), **Node.js 20+**, optional **Docker**.
+
+### Backend API (local)
 
 ```bash
 cd backend
@@ -127,7 +129,9 @@ dotnet run --project src/CareOps.Api/CareOps.Api.csproj
 - Swagger: **http://localhost:5000/swagger**  
 - Health: **http://localhost:5000/health**
 
-### Frontend (Vite dev server)
+In a second terminal:
+
+### Frontend (Vite dev server, local)
 
 ```bash
 cd frontend
@@ -147,7 +151,8 @@ docker compose build
 docker compose up
 ```
 
-- API / Swagger: **http://localhost:5000** (when Development)  
+- API base: **http://localhost:5000**  
+- Swagger UI (Development): **http://localhost:5000/swagger**  
 - Web (nginx → SPA, proxies `/api`): **http://localhost:3000**  
 
 More frontend-specific notes: [frontend/README.md](frontend/README.md).

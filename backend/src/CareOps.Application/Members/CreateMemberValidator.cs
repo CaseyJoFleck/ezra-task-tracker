@@ -7,7 +7,10 @@ public sealed class CreateMemberValidator : AbstractValidator<CreateMemberReques
     public CreateMemberValidator()
     {
         RuleFor(x => x.DisplayName).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.Email).MaximumLength(320).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Email));
+        RuleFor(x => x.Email)
+            .MaximumLength(320)
+            .EmailAddress()
+            .When(x => !string.IsNullOrWhiteSpace(x.Email));
         RuleFor(x => x.Title).MaximumLength(120);
     }
 }
