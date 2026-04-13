@@ -1,112 +1,250 @@
 # Care Operations Task Tracker
 
-Production-minded **internal** MVP for a small **care operations** team: tasks and members, filters, search, overdue visibility—**healthcare-adjacent, not clinical**. No patient data, no PHI, no clinical workflows.
+## Project overview
 
-**Backend:** ASP.NET Core **10** Web API, EF Core + SQLite, layered architecture, FluentValidation, health checks, rate limiting, Swagger, and automated tests.
+This repository is a **production-minded MVP**: a single-page **internal operations dashboard** where a small team can manage **tasks** and a **member** roster, assign work, filter and search, and see **overdue** work at a glance. The UI is wired to a **.NET Web API** with **SQLite**, **validation**, **health checks**, **rate limiting**, and **automated tests** (backend integration/unit; frontend component/unit + Playwright E2E).
 
-**Frontend:** React + TypeScript + **Vite** single-page dashboard (**Tailwind CSS**, **TanStack Query**, **React Hook Form** + **Zod**, **Sonner** toasts), calling the backend **`/api`** routes for tasks and members (see [frontend/README.md](frontend/README.md)). Run the API on port **5000** when using `npm run dev` (Vite proxy), or set **`VITE_API_BASE_URL`** for builds without a proxy.
+---
 
-## Repository layout
+## Why this scope
+
+I kept the assignment centered on a **task management** application, but I chose a **light care-operations framing** so the example feels relevant to **Ezra’s mission**. I intentionally **avoided** modeling patients, medical records, or other clinical/compliance-heavy workflows because I wanted to stay aligned with the prompt and keep the scope focused on the **core task-management problem** (CRUD, assignment, filters, sorting, and quality bar for API + UI).
+
+### Why Ezra
+
+This work is personally meaningful. My dad died from cancer when I was 20—he was nearly recovered when it metastasized. I believe better **coordination and follow-through** across the care journey can catch issues earlier and save lives. Ezra’s focus on that problem is why I want to contribute; this project is my take on a **small, honest slice** of operational tooling—**not** clinical software, but **care-adjacent** enough to show how I think about mission-aligned product scope.
+
+---
+
+## Tech stack
+
+| Layer | Choices |
+|-------|---------|
+| **API** | ASP.NET Core **10** Web API (controllers), **EF Core**, **SQLite**, **FluentValidation**, **Swagger/OpenAPI**, structured errors, **health checks** (`/health`), **ASP.NET Core rate limiting** |
+| **Frontend** | **React 19**, **TypeScript**, **Vite**, **Tailwind CSS**, **TanStack Query**, **React Hook Form** + **Zod**, **Sonner** toasts |
+| **Delivery** | **Docker Compose** (API + nginx-served SPA), Dockerfiles under `backend/` and `frontend/` |
+| **Tests** | **xUnit** + **FluentAssertions** (backend); **Vitest** + Testing Library (frontend); **Playwright** (E2E, Chromium) |
+
+---
+
+## Product scope (what ships in code)
+
+**In scope**
+
+- **Tasks:** create, list, get, update, delete; **patch status** (e.g. complete / reopen / other statuses); assignee optional; due date; **todo / in progress / completed / canceled** statuses; **priority** low / medium / high.
+- **Listing:** filter by status, priority, assignee (including unassigned-only); **search** by title substring; **sort** by created date, due date, or priority; optional **overdue-only** filter; list ordering keeps **active** work before **terminal** (completed/canceled) tasks.
+- **Members:** list, create, **delete** (tasks become **unassigned** via FK `SetNull`).
+- **UX:** dashboard stats, loading/empty/error states, delete confirmation, validation messages.
+- **Data:** seeded members and tasks when the database is first created (see `SeedData`).
+
+**Explicitly out of scope** (by design)
+
+- Authentication, passwords, RBAC, invites  
+- Patient data, PHI, clinical workflows  
+- Redis, queues, microservices, Kubernetes/AWS-specific infra  
+
+---
+
+## Architecture overview
+
+- **Clean layering:** `CareOps.Api` (HTTP, Swagger, middleware) → `CareOps.Application` (services, validators, DTOs, rules) → `CareOps.Domain` (entities, enums) → `CareOps.Infrastructure` (EF Core, SQLite, seeding).
+- **Frontend** is a **SPA** that calls **`/api/...`** JSON endpoints. In local dev, **Vite proxies** `/api` and `/health` to the API. In Docker, the **web** container’s **nginx** proxies `/api` to the **api** service.
+- **Deeper diagrams and CORS notes:** [docs/architecture.md](docs/architecture.md)  
+- **Key technical decisions:** [docs/adr-001-key-decisions.md](docs/adr-001-key-decisions.md)
+
+---
+
+## Data model
+
+- **Member** (`Members`): `Id`, `DisplayName`, optional `Email` / `Title`, `CreatedAtUtc`.
+- **TaskItem** (`TaskItems`): `Id`, `Title`, optional `Description`, `Status`, `Priority`, optional `AssigneeMemberId` (FK → `Member`, **on delete: set null**), optional `DueDateUtc`, optional `CompletedAtUtc`, `CreatedAtUtc`, `UpdatedAtUtc`.
+- **Status (stored as string in SQLite):** `Todo`, `InProgress`, `Completed`, `Canceled` (JSON uses camelCase, e.g. `canceled`). Legacy value `Cancelled` is accepted on read when loading old rows.
+- **Priority:** `Low`, `Medium`, `High`.
+
+Authoritative field detail: [docs/architecture.md](docs/architecture.md) (ER diagram and tables).
+
+---
+
+## API overview
+
+Base path **`/api`**. JSON enums are **camelCase**.
+
+| Method | Path | Notes |
+|--------|------|--------|
+| `GET` | `/health` | Liveness; includes DB check |
+| `GET` | `/api/tasks` | Query: `status`, `priority`, `assigneeMemberId`, `search`, `sortBy`, `sortDir`, `overdueOnly` |
+| `GET` | `/api/tasks/{id}` | Single task |
+| `POST` | `/api/tasks` | Create (rate-limited: **mutating** policy) |
+| `PUT` | `/api/tasks/{id}` | Full update |
+| `PATCH` | `/api/tasks/{id}/status` | Status-only update |
+| `DELETE` | `/api/tasks/{id}` | Delete |
+| `GET` | `/api/members` | List members |
+| `POST` | `/api/members` | Create member (**mutating**) |
+| `DELETE` | `/api/members/{id}` | Delete member (**mutating**); tasks unassigned |
+
+**Swagger UI** (Development): `http://localhost:5000/swagger` when the API runs with `ASPNETCORE_ENVIRONMENT=Development`.
+
+---
+
+## Security considerations
+
+- **No authentication** in this MVP—assumes a **trusted network** or private demo (see ADR / product brief).
+- **Rate limiting:** global per-IP fixed window (**100** requests/minute in non-test environments); **mutating** endpoints use a **stricter** per-IP policy (**30**/minute). Integration tests use a **Testing** environment with very high limits.
+- **CORS:** a **LocalFrontend** policy allows known local dev origins (`localhost`/`127.0.0.1` on ports **5173** and **3000**).
+- **Secrets:** do not commit real connection strings or `.env` files; use [`.env.example`](.env.example) as a template.
+
+---
+
+## Operational considerations
+
+- **SQLite** file: default local path is `careops.db` under the API working directory; Docker Compose stores the DB in a **named volume** (`sqlite_data` → `/data/careops.db` in the API container).
+- **Logs:** ASP.NET Core logging is configured in `appsettings`; structured operational logs are suitable for a real deployment behind a reverse proxy.
+- **Health:** use **`GET /health`** for load balancers or compose healthchecks.
+
+---
+
+## Scalability considerations
+
+- **Current fit:** single API instance + SQLite suits **low concurrency** and the take-home scope.
+- **Growth path:** move to **PostgreSQL** (or similar) for concurrent writes and HA; add **auth** and org-aware tenancy for internet-facing use; horizontal scale of **stateless API** instances behind a load balancer; optional **Redis** for sessions/rate-limit buckets if requirements change—**not** included here to avoid over-engineering.
+
+---
+
+## Local development
+
+**Prerequisites:** [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), **Node.js 20+**, optional **Docker**.
+
+### Backend API
+
+```bash
+cd backend
+dotnet restore CareOps.sln
+dotnet run --project src/CareOps.Api/CareOps.Api.csproj
+```
+
+- Swagger: **http://localhost:5000/swagger**  
+- Health: **http://localhost:5000/health**
+
+### Frontend (Vite dev server)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open **http://localhost:5173** (Vite proxies `/api` to **http://localhost:5000**).
+
+### Docker (API + web)
+
+From the **repository root**:
+
+```bash
+cp .env.example .env   # optional: adjust ports
+docker compose build
+docker compose up
+```
+
+- API / Swagger: **http://localhost:5000** (when Development)  
+- Web (nginx → SPA, proxies `/api`): **http://localhost:3000**  
+
+More frontend-specific notes: [frontend/README.md](frontend/README.md).
+
+---
+
+## Testing
+
+### Backend
+
+```bash
+cd backend
+dotnet test CareOps.sln
+```
+
+Details: [backend/tests/README.md](backend/tests/README.md).
+
+### Frontend (unit/component)
+
+```bash
+cd frontend
+npm install
+npm run test
+```
+
+Watch mode: `npm run test:watch`.
+
+### Frontend (E2E)
+
+Requires **.NET SDK** on `PATH` (starts API + Vite via `frontend/scripts/start-e2e-stack.sh`). One-time browser install:
+
+```bash
+cd frontend
+npx playwright install chromium
+npm run test:e2e
+```
+
+All frontend tests (Vitest + Playwright):
+
+```bash
+cd frontend
+npm run test:all
+```
+
+---
+
+## Tradeoffs and future improvements
+
+- **SQLite** keeps local and CI setup fast; production at scale would likely use **PostgreSQL** and migrations strategy aligned with the team.
+- **No auth** speeds the MVP; production would add **identity**, **authorization**, and network controls.
+- **Single-region / single instance** assumptions; **notifications** (email/Teams), **audit history**, and **real-time** updates are natural follow-ons if users need them.
+
+Extended discussion: [docs/product-brief.md](docs/product-brief.md), [docs/adr-001-key-decisions.md](docs/adr-001-key-decisions.md), [docs/implementation-plan.md](docs/implementation-plan.md).
+
+---
+
+## Repository structure
 
 ```
 ezra-task-tracker/
 ├── README.md
 ├── docker-compose.yml
 ├── .env.example
-├── .dockerignore
-├── .gitignore
 ├── backend/
 │   ├── CareOps.sln
-│   ├── Directory.Build.props      # shared TargetFramework: net10.0
-│   ├── Dockerfile                 # SDK/runtime 10.0
+│   ├── Dockerfile
 │   ├── src/
 │   │   ├── CareOps.Api/           # Web API, Program.cs, controllers
-│   │   ├── CareOps.Application/   # services, validators, DTOs
-│   │   ├── CareOps.Domain/        # entities, enums
-│   │   └── CareOps.Infrastructure/ # EF Core, SQLite, seed
-│   └── tests/                     # CareOps.Api.Tests (integration), CareOps.Application.Tests (unit)
+│   │   ├── CareOps.Application/   # Services, FluentValidation, DTOs
+│   │   ├── CareOps.Domain/        # Entities, enums
+│   │   └── CareOps.Infrastructure/# EF Core, SQLite, seed
+│   └── tests/                     # Integration + unit tests
 ├── frontend/
-│   ├── Dockerfile                 # multi-stage: npm ci + vite build + nginx
-│   ├── nginx.conf
-│   ├── package.json
-│   └── src/                       # dashboard (components, types, mock API)
+│   ├── Dockerfile
+│   ├── nginx.conf                 # /api proxy to API in Docker
+│   ├── playwright.config.ts
+│   ├── e2e/                       # Playwright specs
+│   ├── src/                       # React app (pages, components, api clients)
+│   └── scripts/start-e2e-stack.sh # API + Vite for E2E
 └── docs/
-    └── ...
+    ├── product-brief.md
+    ├── architecture.md
+    ├── adr-001-key-decisions.md
+    └── implementation-plan.md
 ```
 
-## Documentation
+---
 
-| Doc | Contents |
-|-----|----------|
-| [docs/product-brief.md](docs/product-brief.md) | Concept, scope, assumptions, tradeoffs, future work |
-| [docs/architecture.md](docs/architecture.md) | Backend + **frontend** overview, entities, API routes, Docker, CORS |
-| [docs/adr-001-key-decisions.md](docs/adr-001-key-decisions.md) | Stack and layering decisions |
-| [docs/implementation-plan.md](docs/implementation-plan.md) | Phased delivery; **frontend foundation** status |
+## Additional documentation
 
-## Prerequisites
+| Document | Contents |
+|----------|----------|
+| [docs/product-brief.md](docs/product-brief.md) | Problem, scope, personas, assumptions |
+| [docs/architecture.md](docs/architecture.md) | Diagrams, entities, API notes |
+| [docs/adr-001-key-decisions.md](docs/adr-001-key-decisions.md) | ADR: stack and layering |
+| [docs/implementation-plan.md](docs/implementation-plan.md) | Phased delivery notes |
+| [frontend/README.md](frontend/README.md) | Frontend-only commands, E2E details |
 
-- **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)** (solution targets `net10.0` via `backend/Directory.Build.props`).
-- **Node.js 20+** for local frontend dev (`npm` in `frontend/`).
-- For Docker: [Docker](https://docs.docker.com/get-docker/) with Compose v2.
-
-## Local setup
-
-### Backend (recommended for API work)
-
-1. From `backend/`:
-
-   ```bash
-   dotnet restore CareOps.sln
-   dotnet run --project src/CareOps.Api/CareOps.Api.csproj
-   ```
-
-2. Open **http://localhost:5000/swagger** and **GET http://localhost:5000/health**.
-
-### Backend tests
-
-From **`backend/`**:
-
-```bash
-dotnet test CareOps.sln
-```
-
-See [backend/tests/README.md](backend/tests/README.md) for project breakdown and useful options.
-
-### Frontend (dashboard UI)
-
-From `frontend/`:
-
-```bash
-npm install
-npm run dev
-```
-
-Open **http://localhost:5173**. With the API running locally, Vite **proxies** `/api` and `/health` to port **5000** (see `frontend/vite.config.ts`).
-
-More detail: [frontend/README.md](frontend/README.md).
-
-### Docker (API + web UI)
-
-1. Optional: `cp .env.example .env` and adjust ports (example file contains **no secrets**—only ports and public dev URLs).
-2. From the repo root:
-
-   ```bash
-   docker compose build
-   docker compose up
-   ```
-
-3. **API:** **http://localhost:5000/swagger** when `ASPNETCORE_ENVIRONMENT=Development` (default in Compose).
-4. **Web:** **http://localhost:3000** — production build of the SPA served by nginx inside the `web` service.
-
-SQLite in Docker uses the `sqlite_data` volume at `/data/careops.db` inside the API container.
-
-## Security note for contributors
-
-Do **not** commit real API keys, connection strings with passwords, or personal `.env` files. Use `.env.example` as a template; keep secrets in local-only files that are listed in `.gitignore`.
-
-## Out of scope (by design)
-
-Authentication, RBAC, Redis, queues, microservices, Kubernetes/AWS infra, patient records, PHI, clinical decision support.
+---
 
 ## License / use
 

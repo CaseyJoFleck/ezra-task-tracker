@@ -41,20 +41,19 @@ Small ops teams often rely on ad-hoc spreadsheets, chat threads, and personal re
 
 ## User-facing feature checklist
 
-Frontend foundation (mock data): the dashboard implements the interactions below in the browser; **persistence and API integration** are tracked separately in [implementation-plan.md](./implementation-plan.md).
+Implemented against the live **CareOps API** (TanStack Query + `fetch`); mutations invalidate caches.
 
-- [x] Task list with loading / empty / error states *(mock-backed + dev error toggle)*
-- [x] Create / edit task (modals)
-- [x] Delete task with confirmation *(demo — no server delete yet)*
-- [x] Complete / reopen actions *(demo toasts — no PATCH yet)*
-- [x] Member list + create member modal *(new members do not list until API wired)*
-- [x] Filters: status, priority, assignee
+- [x] Task list with loading / empty / error states
+- [x] Create / edit / delete task (modals + confirm delete)
+- [x] Complete / reopen (PATCH status) with toasts
+- [x] Members: list, create, delete (manage members modal); assign tasks to members
+- [x] Filters: status, priority, assignee (including unassigned-only)
 - [x] Search: title substring
-- [x] Sort: created, due, priority (direction configurable)
-- [x] Overdue styling when due in the past and status is not completed
-- [x] Success toasts; destructive confirm for delete
+- [x] Sort: created, due, priority (direction configurable); terminal tasks sorted to bottom of list
+- [x] Overdue styling when due in the past and task is active (not completed/canceled)
+- [x] Success toasts; destructive confirm for task delete
 
-**Still to do for “done-done”:** HTTP client, cache invalidation after mutations, and checkbox verification against the live API in Docker.
+See [README.md](../README.md) for run/test commands and Docker.
 
 ## Success criteria (MVP)
 

@@ -68,19 +68,20 @@ erDiagram
 | `Id` | `Guid` | PK |
 | `Title` | `string` | required, max 500 |
 | `Description` | `string?` | optional, max 4000 |
-| `Status` | enum → string | `Pending`, `InProgress`, `Done`, `Canceled` |
-| `Priority` | enum → string | `Low`, `Medium`, `High`, `Urgent` |
+| `Status` | enum → string | `Todo`, `InProgress`, `Completed`, `Canceled` |
+| `Priority` | enum → string | `Low`, `Medium`, `High` |
 | `AssigneeMemberId` | `Guid?` | FK → `Member.Id`, optional |
 | `DueDateUtc` | `DateTimeOffset?` | optional |
 | `CompletedAtUtc` | `DateTimeOffset?` | set when moved to terminal “done” state; cleared on reopen |
 | `CreatedAtUtc` | `DateTimeOffset` | set on insert |
 | `UpdatedAtUtc` | `DateTimeOffset` | set on insert/update |
 
-**Business rules (planned)**
+**Business rules (implemented)**
 
-- **Complete:** `Status = Done`, `CompletedAtUtc = UtcNow` (idempotent if already done).
-- **Reopen:** `Status = Pending` or `InProgress` (product choice: default to `Pending`), `CompletedAtUtc = null`.
-- **Overdue (UI + API filter):** `DueDateUtc != null` AND `DueDateUtc < UtcNow` AND `Status` not in (`Done`, `Canceled`).
+- **Complete:** `Status = Completed`, `CompletedAtUtc` set when transitioning to completed (see `TaskItemRules`).
+- **Reopen / non-terminal:** moving away from completed clears `CompletedAtUtc`; canceled also clears it.
+- **Overdue (UI + API filter):** `DueDateUtc != null` AND `DueDateUtc < UtcNow` AND status is **active** (`Todo` or `InProgress` only).
+- **List sort:** active tasks first; **completed** and **canceled** tasks after, then secondary sort by `sortBy` / `sortDir`.
 
 ---
 
