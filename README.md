@@ -12,9 +12,11 @@ I kept the assignment centered on a **task management** application, but I chose
 
 ### Why Ezra
 
-My dad died from cancer when I was 20. He was nearly recovered when it metastasized — early detection, exactly what Ezra is building toward, might have changed that outcome. Ezra’s full-body MRI screening is designed to catch what traditional care misses **before it spreads**, and that is not an abstract mission to me.
+My dad died from cancer when I was 20. He was nearly recovered when it metastasized. If it had been caught before it spread, the outcome might have been different.
 
-This project is my take on a small, honest slice of care-adjacent operational tooling — not clinical software, but built with the belief that better coordination and follow-through across the care journey is worth getting right.
+Ezra is building the thing that might have changed that. Full-body MRI screening powered by AI, designed to catch what traditional care misses before it spreads. That is not an abstract mission to me.
+
+This project is my take on a small, honest slice of care-adjacent operational tooling. Not clinical software, but built with the belief that better coordination and follow-through across the care journey is worth getting right.
 
 ---
 
