@@ -43,6 +43,8 @@
 
 **Tradeoff:** Not ideal for high write concurrency or multi-region scale—[architecture.md](./architecture.md) outlines migration to PostgreSQL when needed.
 
+I used `EnsureCreated` plus seed data to keep local setup friction low for this take-home and optimize reviewer experience. If this project continued beyond the submission, I would switch to a standard EF Core migrations workflow so schema evolution is explicit and versioned.
+
 ---
 
 ## 3. Why no authentication for this scoped MVP?

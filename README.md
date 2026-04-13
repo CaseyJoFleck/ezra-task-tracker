@@ -4,6 +4,91 @@
 
 This repository is a **production-minded MVP**: a single-page **internal operations dashboard** where a small team can manage **tasks** and a **member** roster, assign work, filter and search, and see **overdue** work at a glance. The UI is wired to a **.NET Web API** with **SQLite**, **validation**, **health checks**, **rate limiting**, and **automated tests** (backend integration/unit; frontend component/unit + Playwright E2E).
 
+This root `README.md` is the primary reviewer-facing guide.
+
+## Fastest review path
+
+Use Docker Compose from the repository root:
+
+```bash
+cp .env.example .env   # optional: adjust ports
+docker compose build
+docker compose up
+```
+
+Open:
+
+- Web app: **http://localhost:3000**
+- API base: **http://localhost:5000**
+- Swagger (Development): **http://localhost:5000/swagger**
+- Health: **http://localhost:5000/health**
+
+---
+
+## Screenshots
+
+### Main dashboard
+![Main dashboard](docs/images/main_dashboard.png)
+
+### Create task modal
+![Create task modal](docs/images/create_task.png)
+
+### Edit task modal
+![Edit existing task modal](docs/images/edit_existing_task.png)
+
+### Manage members
+![Manage members](docs/images/manage_members.png)
+
+### Add new member
+![New member](docs/images/new_member.png)
+
+### Filter: overdue tasks
+![Filter by overdue](docs/images/filter_by_overdue.png)
+
+### Sort: priority
+![Sort by priority](docs/images/sort_by_priority.png)
+
+## Documentation Map
+
+- Root `README.md`: primary reviewer guide with project overview, setup, architecture summary, tradeoffs, and testing
+- `backend/README.md`: backend-specific development notes and commands
+- `frontend/README.md`: frontend-specific development notes and commands
+- `docs/architecture.md`: architecture diagrams and key technical decisions
+- `docs/adr-001-key-decisions.md`: architecture decision record and tradeoffs
+- `docs/product-brief.md`: product framing, scope, and assumptions
+- `docs/implementation-plan.md`: phased implementation notes
+
+---
+
+## Local development
+
+**Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), **Node.js 20+**, optional **Docker**.
+
+### Backend API (local)
+
+```bash
+cd backend
+dotnet restore CareOps.sln
+dotnet run --project src/CareOps.Api/CareOps.Api.csproj
+```
+
+- Swagger: **http://localhost:5000/swagger**  
+- Health: **http://localhost:5000/health**
+
+In a second terminal:
+
+### Frontend (Vite dev server, local)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open **http://localhost:5173** (Vite proxies `/api` to **http://localhost:5000**).
+
+More frontend-specific notes: [frontend/README.md](frontend/README.md).
+
 ---
 
 ## Why this scope
@@ -12,7 +97,7 @@ I kept the assignment centered on a **task management** application, but I chose
 
 ### Why Ezra
 
-This work is personally meaningful. My dad died from cancer when I was 20—he was nearly recovered when it metastasized. I believe better **coordination and follow-through** across the care journey can catch issues earlier and save lives. Ezra’s focus on that problem is why I want to contribute; this project is my take on a **small, honest slice** of operational tooling—**not** clinical software, but **care-adjacent** enough to show how I think about mission-aligned product scope.
+This work is personally meaningful. My dad died from cancer when I was 20 - he was nearly recovered when it metastasized. I believe better **coordination and follow-through** across the care journey can catch issues earlier and save lives. Ezra’s focus on that problem is why I want to contribute; this project is my take on a **small, honest slice** of operational tooling—**not** clinical software, but **care-adjacent** enough to show how I think about mission-aligned product scope.
 
 ---
 
@@ -112,53 +197,6 @@ Base path **`/api`**. JSON enums are **camelCase**.
 
 ---
 
-## Local development
-
-**Fastest review path: use Docker Compose.**
-
-**Prerequisites:** [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0), **Node.js 20+**, optional **Docker**.
-
-### Backend API (local)
-
-```bash
-cd backend
-dotnet restore CareOps.sln
-dotnet run --project src/CareOps.Api/CareOps.Api.csproj
-```
-
-- Swagger: **http://localhost:5000/swagger**  
-- Health: **http://localhost:5000/health**
-
-In a second terminal:
-
-### Frontend (Vite dev server, local)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open **http://localhost:5173** (Vite proxies `/api` to **http://localhost:5000**).
-
-### Docker (API + web)
-
-From the **repository root**:
-
-```bash
-cp .env.example .env   # optional: adjust ports
-docker compose build
-docker compose up
-```
-
-- API base: **http://localhost:5000**  
-- Swagger UI (Development): **http://localhost:5000/swagger**  
-- Web (nginx → SPA, proxies `/api`): **http://localhost:3000**  
-
-More frontend-specific notes: [frontend/README.md](frontend/README.md).
-
----
-
 ## Testing
 
 ### Backend
@@ -202,6 +240,7 @@ npm run test:all
 ## Tradeoffs and future improvements
 
 - **SQLite** keeps local and CI setup fast; production at scale would likely use **PostgreSQL** and migrations strategy aligned with the team.
+- I used **`EnsureCreated`** plus seed data to keep local setup friction low for this take-home and optimize reviewer experience. If this project continued beyond the submission, I would switch to a standard EF Core migrations workflow so schema evolution is explicit and versioned.
 - **No auth** speeds the MVP; production would add **identity**, **authorization**, and network controls.
 - **Single-region / single instance** assumptions; **notifications** (email/Teams), **audit history**, and **real-time** updates are natural follow-ons if users need them.
 
