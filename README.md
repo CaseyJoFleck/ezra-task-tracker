@@ -12,7 +12,9 @@ I kept the assignment centered on a **task management** application, but I chose
 
 ### Why Ezra
 
-This work is personally meaningful. My dad died from cancer when I was 20 - he was nearly recovered when it metastasized. I believe better **coordination and follow-through** across the care journey can catch issues earlier and save lives. Ezra’s focus on that problem is why I want to contribute; this project is my take on a **small, honest slice** of operational tooling—**not** clinical software, but **care-adjacent** enough to show how I think about mission-aligned product scope.
+My dad died from cancer when I was 20. He was nearly recovered when it metastasized — early detection, exactly what Ezra is building toward, might have changed that outcome. Ezra’s full-body MRI screening is designed to catch what traditional care misses **before it spreads**, and that is not an abstract mission to me.
+
+This project is my take on a small, honest slice of care-adjacent operational tooling — not clinical software, but built with the belief that better coordination and follow-through across the care journey is worth getting right.
 
 ---
 
