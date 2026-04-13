@@ -15,6 +15,7 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Core API and error handling.
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
@@ -40,26 +41,34 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// Application + infrastructure layers.
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// Health.
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("database");
+
+// CORS for known local frontend origins.
+var localFrontendOrigins = new[]
+{
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+};
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("LocalFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",
-                "http://localhost:3000",
-                "http://127.0.0.1:5173",
-                "http://127.0.0.1:3000")
+        policy.WithOrigins(localFrontendOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
+// Rate limiting.
 var isTest = builder.Environment.IsEnvironment("Testing");
 builder.Services.AddRateLimiter(options =>
 {
@@ -93,6 +102,7 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// Request logging.
 builder.Services.AddHttpLogging(options =>
 {
     options.LoggingFields = HttpLoggingFields.RequestMethod
@@ -103,11 +113,13 @@ builder.Services.AddHttpLogging(options =>
 
 var app = builder.Build();
 
+// Proxy compatibility.
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
 });
 
+// Middleware pipeline.
 app.UseExceptionHandler();
 app.UseHttpLogging();
 app.UseRouting();
@@ -125,9 +137,9 @@ app.UseCors("LocalFrontend");
 app.UseRateLimiter();
 
 app.MapHealthChecks("/health");
-
 app.MapControllers();
 
+// Lightweight startup seed for local/dev review.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

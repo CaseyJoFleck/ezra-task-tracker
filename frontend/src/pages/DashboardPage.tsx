@@ -23,9 +23,15 @@ import { TaskList } from "@/components/tasks/TaskList";
 import { taskStats } from "@/lib/taskFilters";
 import type { SortDirection, TaskItemStatus, TaskPriority, TaskSortField } from "@/types/task";
 
+type DashboardFilters = {
+  status: TaskItemStatus | "all";
+  overdueOnly: boolean;
+};
+
 export function DashboardPage() {
   const queryClient = useQueryClient();
 
+  // Filters and sort state.
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<TaskItemStatus | "all">("all");
   const [priority, setPriority] = useState<TaskPriority | "all">("all");
@@ -35,6 +41,7 @@ export function DashboardPage() {
   const [overdueFilter, setOverdueFilter] = useState(false);
   const [activeStat, setActiveStat] = useState<StatCardKey | null>(null);
 
+  // Current selection.
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const listParams: TaskListParams = useMemo(() => {
@@ -50,6 +57,7 @@ export function DashboardPage() {
     return p;
   }, [search, status, priority, assignee, sortBy, sortDir, overdueFilter]);
 
+  // Queries.
   const tasksListQuery = useQuery({
     queryKey: ["tasks", "list", listParams, assignee === "unassigned"] as const,
     queryFn: () =>
@@ -83,12 +91,14 @@ export function DashboardPage() {
 
   const selectedTask = selectedId ? visibleTasks.find((t) => t.id === selectedId) ?? null : null;
 
+  // Modal state.
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [createMemberOpen, setCreateMemberOpen] = useState(false);
   const [manageMembersOpen, setManageMembersOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  // Mutations.
   const patchStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: TaskItemStatus }) =>
       patchTaskStatus(id, status),
@@ -140,23 +150,19 @@ export function DashboardPage() {
       setOverdueFilter(false);
       return;
     }
+
+    const statFilters: Record<StatCardKey, DashboardFilters> = {
+      total: { status: "all", overdueOnly: false },
+      inProgress: { status: "inProgress", overdueOnly: false },
+      overdue: { status: "all", overdueOnly: true },
+      completed: { status: "completed", overdueOnly: false },
+      canceled: { status: "canceled", overdueOnly: false },
+    };
+
+    const nextFilters = statFilters[key];
     setActiveStat(key);
-    if (key === "total") {
-      setStatus("all");
-      setOverdueFilter(false);
-    } else if (key === "inProgress") {
-      setStatus("inProgress");
-      setOverdueFilter(false);
-    } else if (key === "overdue") {
-      setStatus("all");
-      setOverdueFilter(true);
-    } else if (key === "completed") {
-      setStatus("completed");
-      setOverdueFilter(false);
-    } else {
-      setStatus("canceled");
-      setOverdueFilter(false);
-    }
+    setStatus(nextFilters.status);
+    setOverdueFilter(nextFilters.overdueOnly);
   };
 
   const handleSearchChange = (v: string) => {

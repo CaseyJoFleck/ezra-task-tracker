@@ -46,16 +46,15 @@ public sealed class TasksController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        var query = new TaskListQuery
-        {
-            Status = status,
-            Priority = priority,
-            AssigneeMemberId = assigneeMemberId,
-            Search = search,
-            SortBy = sortBy,
-            SortDir = sortDir,
-            OverdueOnly = overdueOnly,
-        };
+        var query = BuildListQuery(
+            status,
+            priority,
+            assigneeMemberId,
+            search,
+            sortBy,
+            sortDir,
+            overdueOnly);
+
         var tasks = await _tasks.ListAsync(query, cancellationToken);
         return Ok(tasks);
     }
@@ -143,6 +142,27 @@ public sealed class TasksController : ControllerBase
     {
         await _tasks.DeleteAsync(id, cancellationToken);
         return NoContent();
+    }
+
+    private static TaskListQuery BuildListQuery(
+        TaskItemStatus? status,
+        TaskPriority? priority,
+        Guid? assigneeMemberId,
+        string? search,
+        string sortBy,
+        string sortDir,
+        bool? overdueOnly)
+    {
+        return new TaskListQuery
+        {
+            Status = status,
+            Priority = priority,
+            AssigneeMemberId = assigneeMemberId,
+            Search = search,
+            SortBy = sortBy,
+            SortDir = sortDir,
+            OverdueOnly = overdueOnly,
+        };
     }
 
     private void AddValidationErrors(FluentValidation.Results.ValidationResult validationResult)
