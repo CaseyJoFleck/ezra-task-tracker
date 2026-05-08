@@ -5,9 +5,8 @@ test.describe("Care Ops dashboard (E2E)", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /Care Operations Task Tracker/i })).toBeVisible();
     await expect(page.getByText(/Total Tasks/i).first()).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /Confirm member scheduling outreach completed/i }),
-    ).toBeVisible({
+    const taskList = page.getByRole("region", { name: /task list/i });
+    await expect(taskList.getByRole("button").first()).toBeVisible({
       timeout: 30_000,
     });
   });
@@ -22,20 +21,22 @@ test.describe("Care Ops dashboard (E2E)", () => {
 
   test("status filter can isolate canceled tasks", async ({ page }) => {
     await page.goto("/");
-    await expect(
-      page.getByRole("button", { name: /Confirm member scheduling outreach completed/i }),
-    ).toBeVisible({
-      timeout: 30_000,
-    });
+    await expect(page.getByText(/Total Tasks/i).first()).toBeVisible({ timeout: 30_000 });
+
+    const taskList = page.getByRole("region", { name: /task list/i });
+    await expect(taskList.getByRole("button").first()).toBeVisible({ timeout: 30_000 });
+
     await page.locator("#filter-status").selectOption("canceled");
-    await expect(
-      page.getByRole("button", { name: /Confirm imaging center coordination complete/i }),
-    ).toBeVisible({
-      timeout: 15_000,
-    });
-    await expect(
-      page.getByRole("button", { name: /Confirm member scheduling outreach completed/i }),
-    ).toHaveCount(0);
+
+    const canceledRows = taskList.getByRole("button", { name: /Canceled/ });
+    await expect(canceledRows.first()).toBeVisible({ timeout: 15_000 });
+
+    const visibleTaskButtons = taskList.getByRole("button");
+    const canceledCount = await canceledRows.count();
+    await expect(visibleTaskButtons).toHaveCount(canceledCount);
+
+    await expect(taskList.getByRole("button", { name: /Todo/ })).toHaveCount(0);
+    await expect(taskList.getByRole("button", { name: /In Progress/ })).toHaveCount(0);
   });
 
   test("create task form requires a title", async ({ page }) => {
