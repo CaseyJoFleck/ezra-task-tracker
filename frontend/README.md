@@ -63,7 +63,7 @@ npm run test:all
 
 Use `npm run test:e2e:ui` for the Playwright UI mode. Set `CI=1` when you want a strict run without reusing an already-running dev server.
 
-**Note:** E2E uses the API’s SQLite file under `backend/` (`careops.db`). Seeded titles like “Follow up with linen vendor…” are assumed on a **fresh or seeded** database; if your DB was created before seed data existed, delete `backend/careops.db` and restart the API once so `EnsureSeededAsync` can populate data.
+**Note:** E2E uses the API’s SQLite file under `backend/` (`careops.db`). Seeded titles like “Confirm member scheduling outreach completed…” are assumed on a **fresh or seeded** database; if your DB was created before seed data existed, delete `backend/careops.db` and restart the API once so `EnsureSeededAsync` can populate data.
 
 ## Build
 

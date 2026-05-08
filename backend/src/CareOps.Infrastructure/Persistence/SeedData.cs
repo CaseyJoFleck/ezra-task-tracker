@@ -47,8 +47,8 @@ public static class SeedData
             new TaskItem
             {
                 Id = Guid.NewGuid(),
-                Title = "Follow up with linen vendor",
-                Description = "Confirm delivery schedule and update PO tracking notes.",
+                Title = "Confirm member scheduling outreach completed",
+                Description = "Verify outreach notes were logged for this week.",
                 Status = TaskItemStatus.InProgress,
                 Priority = TaskPriority.High,
                 AssigneeMemberId = m1.Id,
@@ -59,7 +59,7 @@ public static class SeedData
             new TaskItem
             {
                 Id = Guid.NewGuid(),
-                Title = "Review onboarding checklist for new coordinator",
+                Title = "Review MRI follow-up checklist",
                 Status = TaskItemStatus.Todo,
                 Priority = TaskPriority.Medium,
                 AssigneeMemberId = m2.Id,
@@ -70,7 +70,7 @@ public static class SeedData
             new TaskItem
             {
                 Id = Guid.NewGuid(),
-                Title = "Audit supply room inventory",
+                Title = "Validate intake questionnaire status",
                 Status = TaskItemStatus.Completed,
                 Priority = TaskPriority.Low,
                 AssigneeMemberId = m3.Id,
@@ -82,7 +82,7 @@ public static class SeedData
             new TaskItem
             {
                 Id = Guid.NewGuid(),
-                Title = "Escalate overdue transport coordination",
+                Title = "Escalate overdue follow-up task",
                 Status = TaskItemStatus.Todo,
                 Priority = TaskPriority.High,
                 AssigneeMemberId = null,
@@ -93,8 +93,8 @@ public static class SeedData
             new TaskItem
             {
                 Id = Guid.NewGuid(),
-                Title = "Retire legacy badge printer",
-                Description = "Superseded by updated access-card provisioning workflow.",
+                Title = "Confirm imaging center coordination complete",
+                Description = "Superseded by updated referral routing process.",
                 Status = TaskItemStatus.Canceled,
                 Priority = TaskPriority.Low,
                 AssigneeMemberId = null,
