@@ -47,8 +47,8 @@ public static class SeedData
             new TaskItem
             {
                 Id = Guid.NewGuid(),
-                Title = "Confirm member scheduling outreach completed",
-                Description = "Verify outreach notes were logged for this week.",
+                Title = "Follow up with linen vendor",
+                Description = "Confirm delivery schedule and update PO tracking notes.",
                 Status = TaskItemStatus.InProgress,
                 Priority = TaskPriority.High,
                 AssigneeMemberId = m1.Id,
@@ -59,7 +59,7 @@ public static class SeedData
             new TaskItem
             {
                 Id = Guid.NewGuid(),
-                Title = "Review MRI follow-up checklist",
+                Title = "Review onboarding checklist for new coordinator",
                 Status = TaskItemStatus.Todo,
                 Priority = TaskPriority.Medium,
                 AssigneeMemberId = m2.Id,
@@ -70,7 +70,7 @@ public static class SeedData
             new TaskItem
             {
                 Id = Guid.NewGuid(),
-                Title = "Validate intake questionnaire status",
+                Title = "Audit supply room inventory",
                 Status = TaskItemStatus.Completed,
                 Priority = TaskPriority.Low,
                 AssigneeMemberId = m3.Id,
@@ -82,7 +82,7 @@ public static class SeedData
             new TaskItem
             {
                 Id = Guid.NewGuid(),
-                Title = "Escalate overdue follow-up task",
+                Title = "Escalate overdue transport coordination",
                 Status = TaskItemStatus.Todo,
                 Priority = TaskPriority.High,
                 AssigneeMemberId = null,
@@ -93,8 +93,8 @@ public static class SeedData
             new TaskItem
             {
                 Id = Guid.NewGuid(),
-                Title = "Confirm imaging center coordination complete",
-                Description = "Superseded by updated referral routing process.",
+                Title = "Retire legacy badge printer",
+                Description = "Superseded by updated access-card provisioning workflow.",
                 Status = TaskItemStatus.Canceled,
                 Priority = TaskPriority.Low,
                 AssigneeMemberId = null,
